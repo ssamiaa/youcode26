@@ -1,5 +1,6 @@
-import { useState, FormEvent } from 'react';
-import { useAdPipeline, AdInput, PipelineStage } from '../hooks/useAdPipeline';
+import { useState, type FormEvent } from 'react';
+import { useAdPipeline, EVALUATION_ENABLED } from '../hooks/useAdPipeline';
+import type { AdInput, PipelineStage } from '../hooks/useAdPipeline';
 import './AdPipelineUI.css';
 
 // ─── Step Definitions ────────────────────────────────────────────────────────
@@ -11,20 +12,29 @@ interface Step {
   activeMessage?: string;
 }
 
-const PIPELINE_STEPS: Step[] = [
+const PIPELINE_STEPS_ALL: Step[] = [
   { id: 'strategizing', label: 'Strategy', icon: '✦', activeMessage: 'Claude is writing copy...' },
-  { id: 'evaluating',   label: 'Critique',  icon: '◈', activeMessage: 'Evaluating quality...' },
-  { id: 'hunting',      label: 'Imagery',   icon: '⬡', activeMessage: 'Searching Pexels...' },
-  { id: 'building',     label: 'Build',     icon: '⬢', activeMessage: 'Composing in Cloudinary...' },
+  { id: 'evaluating', label: 'Critique', icon: '◈', activeMessage: 'Evaluating quality...' },
+  { id: 'hunting', label: 'Imagery', icon: '⬡', activeMessage: 'Searching Pexels...' },
+  { id: 'building', label: 'Build', icon: '⬢', activeMessage: 'Composing in Cloudinary...' },
 ];
 
-const STAGE_ORDER: PipelineStage[] = [
-  'strategizing', 'retrying', 'evaluating', 'hunting', 'building', 'done',
-];
+const PIPELINE_STEPS = EVALUATION_ENABLED
+  ? PIPELINE_STEPS_ALL
+  : PIPELINE_STEPS_ALL.filter((s) => s.id !== 'evaluating');
 
-function getStepIndex(stage: PipelineStage): number {
-  if (stage === 'retrying') return 0; // still in strategizing phase
-  return STAGE_ORDER.indexOf(stage);
+const ARCH_STRIP_LABELS = EVALUATION_ENABLED
+  ? (['Input', 'Strategist', 'Evaluator', 'Hunter', 'Builder'] as const)
+  : (['Input', 'Strategist', 'Hunter', 'Builder'] as const);
+
+/** Ordinal along the pipeline for progress UI (retrying counts as strategizing). */
+function getProgressOrdinal(stage: PipelineStage): number {
+  if (stage === 'retrying') return 0;
+  const order: PipelineStage[] = EVALUATION_ENABLED
+    ? ['strategizing', 'evaluating', 'hunting', 'building', 'done']
+    : ['strategizing', 'hunting', 'building', 'done'];
+  const i = order.indexOf(stage);
+  return i === -1 ? 0 : i;
 }
 
 // ─── Sub-Components ──────────────────────────────────────────────────────────
@@ -36,23 +46,24 @@ function PipelineProgress({
   stage: PipelineStage;
   stageMessage: string;
 }) {
-  const currentIndex = getStepIndex(stage);
+  const progress = getProgressOrdinal(stage);
+  const stageOrder: PipelineStage[] = EVALUATION_ENABLED
+    ? ['strategizing', 'evaluating', 'hunting', 'building', 'done']
+    : ['strategizing', 'hunting', 'building', 'done'];
 
   return (
     <div className="pipeline-progress">
       <div className="pipeline-steps">
         {PIPELINE_STEPS.map((step, idx) => {
+          const stepPos = stageOrder.indexOf(step.id);
+
           const isActive =
             (step.id === 'strategizing' && (stage === 'strategizing' || stage === 'retrying')) ||
             (step.id === 'evaluating' && stage === 'evaluating') ||
             (step.id === 'hunting' && stage === 'hunting') ||
             (step.id === 'building' && stage === 'building');
 
-          const isDone =
-            (step.id === 'strategizing' && currentIndex > 2) ||
-            (step.id === 'evaluating' && currentIndex > 3) ||
-            (step.id === 'hunting' && currentIndex > 4) ||
-            (step.id === 'building' && stage === 'done');
+          const isDone = progress > stepPos || (step.id === 'building' && stage === 'done');
 
           return (
             <div
@@ -350,14 +361,15 @@ export function AdPipelineUI() {
         <div className="header-badge">AI-POWERED</div>
         <h1>Non-Profit Ad Pipeline</h1>
         <p>
-          Claude strategizes, critiques, and refines your ad copy. Pexels sources the imagery.
-          Cloudinary composes the final creative.
+          Claude drafts your ad copy
+          {EVALUATION_ENABLED ? ', critiques and refines it,' : ''} then Pexels supplies imagery and Cloudinary
+          composes the final creative.
         </p>
       </header>
 
       {/* Architecture strip */}
       <div className="arch-strip">
-        {['Input', 'Strategist', 'Evaluator', 'Hunter', 'Builder'].map((step, i, arr) => (
+        {ARCH_STRIP_LABELS.map((step, i, arr) => (
           <div key={step} className="arch-item">
             <span className="arch-step">{step}</span>
             {i < arr.length - 1 && <span className="arch-arrow">→</span>}

@@ -52,6 +52,9 @@ export interface PipelineState {
 const MAX_RETRIES = 2;
 const MODEL = 'claude-haiku-4-5';
 
+/** When false, skips the Claude critic and retry loop; strategist output goes straight to imagery. */
+export const EVALUATION_ENABLED = false;
+
 // ─── Anthropic Client (browser-safe) ─────────────────────────────────────────
 
 const getClient = () =>
@@ -225,36 +228,48 @@ export function useAdPipeline() {
     try {
       let strategy: AdStrategy | null = null;
       let evaluation: EvaluationResult | null = null;
-      let feedback: string | undefined;
       let attempts = 0;
 
-      // ── Agentic loop: Strategist → Evaluator ──────────────────────────────
-      while (attempts <= MAX_RETRIES) {
-        const isRetry = attempts > 0;
+      if (EVALUATION_ENABLED) {
+        // ── Agentic loop: Strategist → Evaluator ───────────────────────────
+        let feedback: string | undefined;
+        while (attempts <= MAX_RETRIES) {
+          const isRetry = attempts > 0;
 
-        setStage(
-          isRetry ? 'retrying' : 'strategizing',
-          isRetry
-            ? `Refining strategy (attempt ${attempts + 1} of ${MAX_RETRIES + 1})...`
-            : 'Crafting ad strategy...'
-        );
-
-        strategy = await runStrategist(input, feedback);
-
-        setStage('evaluating', 'Criticizing strategy...');
-        evaluation = await runEvaluator(input, strategy);
-
-        if (evaluation.passed) break;
-
-        feedback = evaluation.feedback;
-        attempts++;
-
-        if (attempts > MAX_RETRIES) {
-          throw new Error(
-            `Strategy failed quality check after ${MAX_RETRIES + 1} attempts. ` +
-              `Final score: ${evaluation.score}/10. Last feedback: ${evaluation.feedback}`
+          setStage(
+            isRetry ? 'retrying' : 'strategizing',
+            isRetry
+              ? `Refining strategy (attempt ${attempts + 1} of ${MAX_RETRIES + 1})...`
+              : 'Crafting ad strategy...'
           );
+
+          strategy = await runStrategist(input, feedback);
+
+          setStage('evaluating', 'Criticizing strategy...');
+          evaluation = await runEvaluator(input, strategy);
+
+          if (evaluation.passed) break;
+
+          feedback = evaluation.feedback;
+          attempts++;
+
+          if (attempts > MAX_RETRIES) {
+            throw new Error(
+              `Strategy failed quality check after ${MAX_RETRIES + 1} attempts. ` +
+                `Final score: ${evaluation.score}/10. Last feedback: ${evaluation.feedback}`
+            );
+          }
         }
+      } else {
+        setStage('strategizing', 'Crafting ad strategy...');
+        strategy = await runStrategist(input);
+        evaluation = {
+          score: 10,
+          passed: true,
+          feedback:
+            'Evaluation is turned off. Set EVALUATION_ENABLED to true in useAdPipeline.ts to enable the critic and retries.',
+        };
+        attempts = 0;
       }
 
       // ── Hunter: source image from Pexels ──────────────────────────────────
