@@ -1,0 +1,401 @@
+import { useState, FormEvent } from 'react';
+import { useAdPipeline, AdInput, PipelineStage } from '../hooks/useAdPipeline';
+import './AdPipelineUI.css';
+
+// ─── Step Definitions ────────────────────────────────────────────────────────
+
+interface Step {
+  id: PipelineStage;
+  label: string;
+  icon: string;
+  activeMessage?: string;
+}
+
+const PIPELINE_STEPS: Step[] = [
+  { id: 'strategizing', label: 'Strategy', icon: '✦', activeMessage: 'Claude is writing copy...' },
+  { id: 'evaluating',   label: 'Critique',  icon: '◈', activeMessage: 'Evaluating quality...' },
+  { id: 'hunting',      label: 'Imagery',   icon: '⬡', activeMessage: 'Searching Pexels...' },
+  { id: 'building',     label: 'Build',     icon: '⬢', activeMessage: 'Composing in Cloudinary...' },
+];
+
+const STAGE_ORDER: PipelineStage[] = [
+  'strategizing', 'retrying', 'evaluating', 'hunting', 'building', 'done',
+];
+
+function getStepIndex(stage: PipelineStage): number {
+  if (stage === 'retrying') return 0; // still in strategizing phase
+  return STAGE_ORDER.indexOf(stage);
+}
+
+// ─── Sub-Components ──────────────────────────────────────────────────────────
+
+function PipelineProgress({
+  stage,
+  stageMessage,
+}: {
+  stage: PipelineStage;
+  stageMessage: string;
+}) {
+  const currentIndex = getStepIndex(stage);
+
+  return (
+    <div className="pipeline-progress">
+      <div className="pipeline-steps">
+        {PIPELINE_STEPS.map((step, idx) => {
+          const isActive =
+            (step.id === 'strategizing' && (stage === 'strategizing' || stage === 'retrying')) ||
+            (step.id === 'evaluating' && stage === 'evaluating') ||
+            (step.id === 'hunting' && stage === 'hunting') ||
+            (step.id === 'building' && stage === 'building');
+
+          const isDone =
+            (step.id === 'strategizing' && currentIndex > 2) ||
+            (step.id === 'evaluating' && currentIndex > 3) ||
+            (step.id === 'hunting' && currentIndex > 4) ||
+            (step.id === 'building' && stage === 'done');
+
+          return (
+            <div
+              key={step.id}
+              className={[
+                'pipeline-step',
+                isActive ? 'active' : '',
+                isDone ? 'done' : '',
+              ]
+                .filter(Boolean)
+                .join(' ')}
+            >
+              <div className="step-icon">
+                {isDone ? (
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
+                ) : (
+                  <span>{step.icon}</span>
+                )}
+                {isActive && <span className="pulse-ring" />}
+              </div>
+              <span className="step-label">{step.label}</span>
+              {idx < PIPELINE_STEPS.length - 1 && (
+                <div className={`step-connector ${isDone ? 'filled' : ''}`} />
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      <p className="stage-message">
+        {stage === 'retrying' ? (
+          <>
+            <span className="retry-badge">RETRY</span>
+            {stageMessage}
+          </>
+        ) : (
+          stageMessage
+        )}
+      </p>
+    </div>
+  );
+}
+
+function AdResult({
+  result,
+  onReset,
+}: {
+  result: NonNullable<ReturnType<typeof useAdPipeline>['result']>;
+  onReset: () => void;
+}) {
+  const [imgLoaded, setImgLoaded] = useState(false);
+  const [imgError, setImgError] = useState(false);
+
+  return (
+    <div className="ad-result">
+      <div className="result-header">
+        <div className="result-badge">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
+          </svg>
+          Ad Generated
+        </div>
+        <div className="score-pill">
+          Score: {result.evaluation.score}/10
+          {result.attempts > 1 && (
+            <span className="attempts-note"> · {result.attempts} attempts</span>
+          )}
+        </div>
+      </div>
+
+      <div className="result-grid">
+        {/* Ad Preview */}
+        <div className="ad-preview-card">
+          <div className="preview-label">Cloudinary Render</div>
+          {!imgLoaded && !imgError && (
+            <div className="img-skeleton">
+              <div className="skeleton-shimmer" />
+              <span>Loading ad preview...</span>
+            </div>
+          )}
+          {imgError ? (
+            <div className="img-error">
+              <p>Preview unavailable</p>
+              <a href={result.cloudinaryUrl} target="_blank" rel="noopener noreferrer">
+                Open Cloudinary URL
+              </a>
+            </div>
+          ) : (
+            <img
+              src={result.cloudinaryUrl}
+              alt={result.strategy.headline}
+              className={imgLoaded ? 'loaded' : 'loading'}
+              onLoad={() => setImgLoaded(true)}
+              onError={() => setImgError(true)}
+            />
+          )}
+        </div>
+
+        {/* Copy & Metadata */}
+        <div className="ad-meta">
+          <section className="meta-section">
+            <h3>Ad Copy</h3>
+            <div className="copy-block">
+              <div className="copy-label">Headline</div>
+              <p className="headline-text">{result.strategy.headline}</p>
+            </div>
+            <div className="copy-block">
+              <div className="copy-label">Body</div>
+              <p className="body-text">{result.strategy.body}</p>
+            </div>
+            <div className="copy-block">
+              <div className="copy-label">Pexels Query</div>
+              <code className="query-text">"{result.strategy.pexels_query}"</code>
+            </div>
+          </section>
+
+          <section className="meta-section">
+            <h3>Evaluation</h3>
+            <div className="score-bar-wrapper">
+              <div className="score-bar">
+                <div
+                  className="score-fill"
+                  style={{ width: `${(result.evaluation.score / 10) * 100}%` }}
+                />
+              </div>
+              <span className="score-num">{result.evaluation.score}/10</span>
+            </div>
+            <p className="feedback-text">{result.evaluation.feedback}</p>
+          </section>
+
+          <section className="meta-section urls-section">
+            <h3>URLs</h3>
+            <a
+              href={result.imageUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="url-link"
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <rect x="3" y="3" width="18" height="18" rx="2" />
+                <circle cx="8.5" cy="8.5" r="1.5" />
+                <polyline points="21 15 16 10 5 21" />
+              </svg>
+              Source Image (Pexels)
+            </a>
+            <a
+              href={result.cloudinaryUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="url-link"
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z" />
+              </svg>
+              Cloudinary Transform URL
+            </a>
+          </section>
+        </div>
+      </div>
+
+      <button className="btn-reset" onClick={onReset}>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <polyline points="1 4 1 10 7 10" />
+          <path d="M3.51 15a9 9 0 1 0 .49-4.95" />
+        </svg>
+        Generate Another Ad
+      </button>
+    </div>
+  );
+}
+
+// ─── Input Form ───────────────────────────────────────────────────────────────
+
+const SECTORS = [
+  'Animal Welfare',
+  'Arts & Culture',
+  'Children & Youth',
+  'Community Development',
+  'Disability Services',
+  'Education',
+  'Environmental',
+  'Food Security',
+  'Health & Medical',
+  'Homeless Services',
+  'Human Rights',
+  'Mental Health',
+  'Seniors',
+  'Veterans',
+  'Women & Families',
+  'Other',
+];
+
+function InputForm({ onSubmit }: { onSubmit: (input: AdInput) => void }) {
+  const [form, setForm] = useState<AdInput>({
+    orgName: '',
+    sector: '',
+    mission: '',
+    location: '',
+  });
+
+  const handleSubmit = (e: FormEvent) => {
+    e.preventDefault();
+    if (form.orgName && form.sector && form.mission && form.location) {
+      onSubmit(form);
+    }
+  };
+
+  const set = (field: keyof AdInput) => (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
+  ) => setForm((prev) => ({ ...prev, [field]: e.target.value }));
+
+  return (
+    <form className="input-form" onSubmit={handleSubmit}>
+      <div className="form-grid">
+        <div className="form-group">
+          <label htmlFor="orgName">Organization Name</label>
+          <input
+            id="orgName"
+            type="text"
+            placeholder="e.g. Vancouver Food Bank"
+            value={form.orgName}
+            onChange={set('orgName')}
+            required
+          />
+        </div>
+
+        <div className="form-group">
+          <label htmlFor="sector">Sector</label>
+          <select id="sector" value={form.sector} onChange={set('sector')} required>
+            <option value="" disabled>
+              Select a sector...
+            </option>
+            {SECTORS.map((s) => (
+              <option key={s} value={s}>
+                {s}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="form-group full-width">
+          <label htmlFor="mission">Mission Statement</label>
+          <textarea
+            id="mission"
+            placeholder="e.g. To eliminate hunger in Metro Vancouver by redistributing surplus food to families in need."
+            value={form.mission}
+            onChange={set('mission')}
+            rows={3}
+            required
+          />
+        </div>
+
+        <div className="form-group">
+          <label htmlFor="location">Location</label>
+          <input
+            id="location"
+            type="text"
+            placeholder="e.g. Vancouver, BC"
+            value={form.location}
+            onChange={set('location')}
+            required
+          />
+        </div>
+      </div>
+
+      <button
+        type="submit"
+        className="btn-generate"
+        disabled={!form.orgName || !form.sector || !form.mission || !form.location}
+      >
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+        </svg>
+        Generate Ad
+      </button>
+    </form>
+  );
+}
+
+// ─── Main Component ───────────────────────────────────────────────────────────
+
+export function AdPipelineUI() {
+  const { stage, stageMessage, result, error, run, reset } = useAdPipeline();
+
+  const isProcessing = ['strategizing', 'evaluating', 'retrying', 'hunting', 'building'].includes(
+    stage
+  );
+
+  return (
+    <div className="ad-pipeline">
+      {/* Header */}
+      <header className="pipeline-header">
+        <div className="header-badge">AI-POWERED</div>
+        <h1>Non-Profit Ad Pipeline</h1>
+        <p>
+          Claude strategizes, critiques, and refines your ad copy. Pexels sources the imagery.
+          Cloudinary composes the final creative.
+        </p>
+      </header>
+
+      {/* Architecture strip */}
+      <div className="arch-strip">
+        {['Input', 'Strategist', 'Evaluator', 'Hunter', 'Builder'].map((step, i, arr) => (
+          <div key={step} className="arch-item">
+            <span className="arch-step">{step}</span>
+            {i < arr.length - 1 && <span className="arch-arrow">→</span>}
+          </div>
+        ))}
+      </div>
+
+      {/* Body */}
+      <main className="pipeline-body">
+        {stage === 'idle' && <InputForm onSubmit={run} />}
+
+        {isProcessing && (
+          <div className="processing-view">
+            <PipelineProgress stage={stage} stageMessage={stageMessage} />
+          </div>
+        )}
+
+        {stage === 'done' && result && (
+          <AdResult result={result} onReset={reset} />
+        )}
+
+        {stage === 'error' && (
+          <div className="error-view">
+            <div className="error-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <circle cx="12" cy="12" r="10" />
+                <line x1="12" y1="8" x2="12" y2="12" />
+                <line x1="12" y1="16" x2="12.01" y2="16" />
+              </svg>
+            </div>
+            <h3>Pipeline Error</h3>
+            <p className="error-message">{error}</p>
+            <button className="btn-reset" onClick={reset}>
+              Try Again
+            </button>
+          </div>
+        )}
+      </main>
+    </div>
+  );
+}
