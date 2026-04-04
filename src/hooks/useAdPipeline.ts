@@ -18,12 +18,19 @@ export interface AdInput {
   sector: string;
   mission: string;
   location: string;
+  contact: string;
 }
 
 export interface AdStrategy {
   headline: string;
   body: string;
   pexels_query: string;
+  /** The target audience persona Claude modelled before writing */
+  persona: string;
+  /** Which copy framework was applied and why */
+  copyFramework: string;
+  /** The tone register chosen for this sector/org */
+  tone: string;
 }
 
 export interface EvaluationResult {
@@ -143,7 +150,10 @@ Location: ${input.location}${feedbackSection}
 
 Return this exact JSON structure:
 {
-  "headline": "Headline: max 8 words, includes the org name OR a specific impact stat, no punctuation",
+  "persona": "1–2 sentence description of the target donor/volunteer you modelled: age bracket, core motivation, and the single biggest objection they'd have before donating",
+  "copyFramework": "Name of the framework you used (e.g. 'Problem → Solution → Proof') and one sentence explaining why it fits this org",
+  "tone": "The tone register you chose (e.g. 'Urgent and direct') and one sentence explaining why it fits the sector",
+  "headline": "Max 8 words, includes the org name OR a specific impact stat, no punctuation",
   "body": "1–2 sentences of body copy. Must name '${input.orgName}' if not in headline. Use one concrete detail (number, place, or outcome). End with an implicit or explicit call to action.",
   "pexels_query": "3–5 word literal photo description for Pexels search"
 }`;
@@ -215,42 +225,87 @@ async function runHunter(query: string): Promise<string> {
   return data.photos[0].src.large2x as string;
 }
 
-function buildCloudinaryUrl(headline: string, imageUrl: string): string {
+function sanitizeForCloudinary(text: string): string {
+  return text
+    .replace(/\//g, ' ')       // Slashes break URL paths
+    .replace(/,/g, '%252C')    // Commas are Cloudinary layer delimiters
+    .replace(/\$/g, '%2524');  // Dollar signs are Cloudinary variable sigils
+}
+
+function buildCloudinaryUrl(
+  headline: string,
+  orgName: string,
+  contact: string,
+  imageUrl: string
+): string {
   const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
 
-  // 1. Sanitize and Escape the Headline
-  // We use double-encoding for commas because Cloudinary uses commas as delimiters.
-  const cleanHeadline = headline
-    .replace(/\//g, ' ')         // Slashes break URL paths
-    .replace(/,/g, '%252C');    // Comma must be escaped for Cloudinary layers
-
-  const encodedHeadline = encodeURIComponent(cleanHeadline);
+  const encodedHeadline = encodeURIComponent(sanitizeForCloudinary(headline));
+  const encodedOrgName  = encodeURIComponent(sanitizeForCloudinary(orgName));
+  const encodedContact  = encodeURIComponent(sanitizeForCloudinary(contact));
   const encodedImageUrl = encodeURIComponent(imageUrl);
 
-  // 2. Base Configuration (1080x1080 Square Ad)
-  const baseConfig = `w_1080,h_1080,c_fill,f_auto,q_auto`;
+  // ── Layer stack (bottom → top) ─────────────────────────────────────────────
+  // 1. Base: 1080×1080 square crop
+  const base = `w_1080,h_1080,c_fill,f_auto,q_auto`;
 
-  // 3. The Scrim (Background Box)
-  // We create a "space" character, stretch it to 1080px wide, and make it black/transparent.
+  // 2. Scrim: full-width dark gradient bar covering the lower ~420px
   const scrim = [
     `co_black`,
-    `l_text:Arial_10:%20`, // The "Space" primitive
-    `w_1080,h_350`,       // Box dimensions
-    `o_50`,               // 50% opacity
-    `g_south`             // Pinned to the bottom
-  ].join(',');
-
-  // 4. The Headline Text
-  // We pin to south and use y_120 to provide "padding" from the bottom edge.
-  const textLayer = [
-    `co_rgb:ffffff`,
-    `l_text:Arial_60_bold:${encodedHeadline}`,
+    `l_text:Arial_10:%20`,   // invisible 1-char "canvas"
+    `w_1080,h_420`,
+    `o_65`,
     `g_south`,
-    `y_120`
   ].join(',');
 
-  // 5. Final Assembly
-  return `https://res.cloudinary.com/${cloudName}/image/fetch/${baseConfig}/${scrim}/${textLayer}/${encodedImageUrl}`;
+  // 3. Headline: bold, large, word-wrapped to 940px, centred in the scrim
+  //    c_fit + w_ enables Cloudinary's automatic line-breaking
+  const headlineLayer = [
+    `co_rgb:ffffff`,
+    `l_text:Arial_56_bold_center:${encodedHeadline}`,
+    `w_940,c_fit`,
+    `g_south`,
+    `y_160`,
+  ].join(',');
+
+  // 4. Footer divider: a 1px white hairline above the footer strip
+  const divider = [
+    `co_rgb:ffffff`,
+    `l_text:Arial_2:%20`,
+    `w_980,h_1`,
+    `o_40`,
+    `g_south`,
+    `y_90`,
+  ].join(',');
+
+  // 5. Org name: bottom-left of the footer strip
+  const orgNameLayer = [
+    `co_rgb:ffffff`,
+    `l_text:Arial_28_bold:${encodedOrgName}`,
+    `g_south_west`,
+    `x_40`,
+    `y_38`,
+  ].join(',');
+
+  // 6. Contact info: bottom-right of the footer strip
+  const contactLayer = [
+    `co_rgb:ffffffcc`,
+    `l_text:Arial_24:${encodedContact}`,
+    `g_south_east`,
+    `x_40`,
+    `y_40`,
+  ].join(',');
+
+  return [
+    `https://res.cloudinary.com/${cloudName}/image/fetch`,
+    base,
+    scrim,
+    headlineLayer,
+    divider,
+    orgNameLayer,
+    contactLayer,
+    encodedImageUrl,
+  ].join('/');
 }
 
 // ─── Hook ─────────────────────────────────────────────────────────────────────
@@ -322,7 +377,7 @@ export function useAdPipeline() {
 
       // ── Builder: compose Cloudinary URL ───────────────────────────────────
       setStage('building', 'Assembling final ad...');
-      const cloudinaryUrl = buildCloudinaryUrl(strategy!.headline, imageUrl);
+      const cloudinaryUrl = buildCloudinaryUrl(strategy!.headline, input.orgName, input.contact, imageUrl);
 
       setState({
         stage: 'done',

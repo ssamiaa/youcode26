@@ -226,6 +226,57 @@ function AdResult({
         </div>
       </div>
 
+      {/* Strategy Insights — full-width row below the grid */}
+      <div className="strategy-insights">
+        <div className="insights-header">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <circle cx="12" cy="12" r="10" />
+            <line x1="12" y1="8" x2="12" y2="12" />
+            <line x1="12" y1="16" x2="12.01" y2="16" />
+          </svg>
+          Strategy Rationale
+        </div>
+        <div className="insights-grid">
+          <div className="insight-card">
+            <div className="insight-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                <circle cx="12" cy="7" r="4" />
+              </svg>
+            </div>
+            <div className="insight-content">
+              <div className="insight-label">Audience Persona</div>
+              <p className="insight-text">{result.strategy.persona}</p>
+            </div>
+          </div>
+
+          <div className="insight-card">
+            <div className="insight-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <polyline points="9 11 12 14 22 4" />
+                <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
+              </svg>
+            </div>
+            <div className="insight-content">
+              <div className="insight-label">Copy Framework</div>
+              <p className="insight-text">{result.strategy.copyFramework}</p>
+            </div>
+          </div>
+
+          <div className="insight-card">
+            <div className="insight-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+              </svg>
+            </div>
+            <div className="insight-content">
+              <div className="insight-label">Tone & Voice</div>
+              <p className="insight-text">{result.strategy.tone}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <button className="btn-reset" onClick={onReset}>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
           <polyline points="1 4 1 10 7 10" />
@@ -264,11 +315,12 @@ function InputForm({ onSubmit }: { onSubmit: (input: AdInput) => void }) {
     sector: '',
     mission: '',
     location: '',
+    contact: '',
   });
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
-    if (form.orgName && form.sector && form.mission && form.location) {
+    if (form.orgName && form.sector && form.mission && form.location && form.contact) {
       onSubmit(form);
     }
   };
@@ -329,12 +381,24 @@ function InputForm({ onSubmit }: { onSubmit: (input: AdInput) => void }) {
             required
           />
         </div>
+
+        <div className="form-group">
+          <label htmlFor="contact">Contact (email, website, or phone)</label>
+          <input
+            id="contact"
+            type="text"
+            placeholder="e.g. www.foodbank.bc.ca"
+            value={form.contact}
+            onChange={set('contact')}
+            required
+          />
+        </div>
       </div>
 
       <button
         type="submit"
         className="btn-generate"
-        disabled={!form.orgName || !form.sector || !form.mission || !form.location}
+        disabled={!form.orgName || !form.sector || !form.mission || !form.location || !form.contact}
       >
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
           <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />

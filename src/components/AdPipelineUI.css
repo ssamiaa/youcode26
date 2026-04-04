@@ -736,3 +736,105 @@
     font-size: 14px;
   }
 }
+
+/* ─── Strategy Insights ──────────────────────────────────────────────────────── */
+.strategy-insights {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.insights-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 20px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-elevated);
+}
+
+.insights-header svg {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  stroke: var(--accent);
+}
+
+.insights-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  divide-x: 1px solid var(--border);
+}
+
+.insight-card {
+  display: flex;
+  gap: 14px;
+  padding: 20px;
+  border-right: 1px solid var(--border);
+}
+
+.insight-card:last-child {
+  border-right: none;
+}
+
+.insight-icon {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: rgba(108, 99, 255, 0.1);
+  border: 1px solid rgba(108, 99, 255, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 2px;
+}
+
+.insight-icon svg {
+  width: 15px;
+  height: 15px;
+  stroke: var(--accent);
+}
+
+.insight-content {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.insight-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.insight-text {
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.6;
+  margin: 0;
+}
+
+@media (max-width: 700px) {
+  .insights-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .insight-card {
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .insight-card:last-child {
+    border-bottom: none;
+  }
+}
