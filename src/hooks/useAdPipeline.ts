@@ -21,6 +21,14 @@ export interface AdInput {
   contact: string;
 }
 
+export type AdVisualStyle =
+  | 'bottom-bar'   // Classic dark bar at bottom — versatile, works for any org
+  | 'bold-center'  // Full-image overlay, large centred headline — high drama/crisis orgs
+  | 'top-headline' // Dark bar at top, clean footer — professional/authoritative orgs
+  | 'side-panel'   // Left dark panel, text on left — modern, arts & community orgs
+  | 'dramatic'     // Dark purple-tinted scrim, auto-contrast boost — advocacy/environmental
+  | 'minimal';     // Subtle fade, small elegant text — established/senior-services orgs
+
 export interface AdStrategy {
   headline: string;
   body: string;
@@ -31,6 +39,10 @@ export interface AdStrategy {
   copyFramework: string;
   /** The tone register chosen for this sector/org */
   tone: string;
+  /** Visual layout style chosen for the Cloudinary composition */
+  visualStyle: AdVisualStyle;
+  /** One-sentence rationale for the visual style choice */
+  visualStyleRationale: string;
 }
 
 export interface EvaluationResult {
@@ -153,10 +165,20 @@ Return this exact JSON structure:
   "persona": "1–2 sentence description of the target donor/volunteer you modelled: age bracket, core motivation, and the single biggest objection they'd have before donating",
   "copyFramework": "Name of the framework you used (e.g. 'Problem → Solution → Proof') and one sentence explaining why it fits this org",
   "tone": "The tone register you chose (e.g. 'Urgent and direct') and one sentence explaining why it fits the sector",
+  "visualStyle": "<one of: bottom-bar | bold-center | top-headline | side-panel | dramatic | minimal>",
+  "visualStyleRationale": "One sentence explaining why this visual layout fits the emotional register of the ad",
   "headline": "Max 8 words, includes the org name OR a specific impact stat, no punctuation",
   "body": "1–2 sentences of body copy. Must name '${input.orgName}' if not in headline. Use one concrete detail (number, place, or outcome). End with an implicit or explicit call to action.",
   "pexels_query": "3–5 word literal photo description for Pexels search"
-}`;
+}
+
+Visual style guide — choose the ONE that best matches the emotional register of your copy:
+- "bottom-bar"   → Classic, safe. Dark bar at bottom. Works for any sector.
+- "bold-center"  → High drama. Full-image overlay, large centred headline. Best for crisis sectors (food security, homeless services, disaster relief).
+- "top-headline" → Clean, authoritative. Dark bar at top, footer at bottom. Best for health, education, professional services.
+- "side-panel"   → Modern, editorial. Left-side dark panel with left-aligned text. Best for arts, culture, community development.
+- "dramatic"     → Cinematic, urgent. Dark purple-tinted scrim, contrast-boosted image. Best for advocacy, human rights, environmental.
+- "minimal"      → Elegant, trustworthy. Subtle fade, refined small text. Best for well-established orgs, seniors services, arts foundations.`;
 
   const raw = await callClaude(system, user);
   return extractJSON<AdStrategy>(raw);
@@ -232,80 +254,161 @@ function sanitizeForCloudinary(text: string): string {
     .replace(/\$/g, '%2524');  // Dollar signs are Cloudinary variable sigils
 }
 
+// ─── Style Builders ───────────────────────────────────────────────────────────
+// Each function returns the ordered transformation segments (joined with '/').
+// Segments are assembled as: base / ...layers / encodedImageUrl
+
+type StyleContext = {
+  cloudName: string;
+  h: string;  // encoded headline
+  o: string;  // encoded org name
+  c: string;  // encoded contact
+  img: string; // encoded image URL
+};
+
+/** Classic dark bar at the bottom — versatile fallback. */
+function styleBottomBar({ cloudName, h, o, c, img }: StyleContext): string {
+  return [
+    `https://res.cloudinary.com/${cloudName}/image/fetch`,
+    `w_1080,h_1080,c_fill,f_auto,q_auto`,
+    // scrim
+    `co_black,l_text:Arial_10:%20,w_1080,h_420,o_65,g_south`,
+    // headline (word-wrapped)
+    `co_rgb:ffffff,l_text:Arial_56_bold_center:${h},w_940,c_fit,g_south,y_160`,
+    // divider hairline
+    `co_rgb:ffffff,l_text:Arial_2:%20,w_980,h_1,o_35,g_south,y_90`,
+    // footer text
+    `co_rgb:ffffff,l_text:Arial_28_bold:${o},g_south_west,x_40,y_38`,
+    `co_rgb:ffffffcc,l_text:Arial_24:${c},g_south_east,x_40,y_40`,
+    img,
+  ].join('/');
+}
+
+/** Full-image overlay, large centred headline — high drama for crisis orgs. */
+function styleBoldCenter({ cloudName, h, o, c, img }: StyleContext): string {
+  return [
+    `https://res.cloudinary.com/${cloudName}/image/fetch`,
+    `w_1080,h_1080,c_fill,f_auto,q_auto`,
+    // full overlay
+    `co_black,l_text:Arial_10:%20,w_1080,h_1080,o_50,g_center`,
+    // headline centred, slightly above middle
+    `co_rgb:ffffff,l_text:Arial_64_bold_center:${h},w_900,c_fit,g_center,y_-80`,
+    // footer bar
+    `co_black,l_text:Arial_10:%20,w_1080,h_110,o_85,g_south`,
+    // divider
+    `co_rgb:ffffff,l_text:Arial_2:%20,w_980,h_1,o_30,g_south,y_110`,
+    // footer text
+    `co_rgb:ffffff,l_text:Arial_28_bold:${o},g_south_west,x_40,y_38`,
+    `co_rgb:ffffffcc,l_text:Arial_24:${c},g_south_east,x_40,y_40`,
+    img,
+  ].join('/');
+}
+
+/** Dark bar at top, clean footer — authoritative and professional. */
+function styleTopHeadline({ cloudName, h, o, c, img }: StyleContext): string {
+  return [
+    `https://res.cloudinary.com/${cloudName}/image/fetch`,
+    `w_1080,h_1080,c_fill,f_auto,q_auto`,
+    // top scrim
+    `co_black,l_text:Arial_10:%20,w_1080,h_360,o_75,g_north`,
+    // headline (word-wrapped, anchored to top)
+    `co_rgb:ffffff,l_text:Arial_52_bold_center:${h},w_940,c_fit,g_north,y_65`,
+    // bottom footer bar
+    `co_black,l_text:Arial_10:%20,w_1080,h_100,o_85,g_south`,
+    // footer divider
+    `co_rgb:ffffff,l_text:Arial_2:%20,w_980,h_1,o_30,g_south,y_100`,
+    // footer text
+    `co_rgb:ffffff,l_text:Arial_28_bold:${o},g_south_west,x_40,y_36`,
+    `co_rgb:ffffffcc,l_text:Arial_24:${c},g_south_east,x_40,y_38`,
+    img,
+  ].join('/');
+}
+
+/** Left dark panel with left-aligned text — modern and editorial. */
+function styleSidePanel({ cloudName, h, o, c, img }: StyleContext): string {
+  return [
+    `https://res.cloudinary.com/${cloudName}/image/fetch`,
+    `w_1080,h_1080,c_fill,f_auto,q_auto`,
+    // left panel
+    `co_black,l_text:Arial_10:%20,w_430,h_1080,o_80,g_west`,
+    // headline left-aligned, vertically centred in panel
+    `co_rgb:ffffff,l_text:Arial_50_bold:${h},w_360,c_fit,g_west,x_35,y_-60`,
+    // divider line above footer in panel
+    `co_rgb:ffffff,l_text:Arial_2:%20,w_360,h_1,o_35,g_south_west,x_35,y_90`,
+    // footer text in panel
+    `co_rgb:ffffff,l_text:Arial_26_bold:${o},g_south_west,x_35,y_56`,
+    `co_rgb:ffffffcc,l_text:Arial_22:${c},g_south_west,x_35,y_28`,
+    img,
+  ].join('/');
+}
+
+/** Dark purple tint + contrast boost — cinematic, urgent, advocacy-ready. */
+function styleDramatic({ cloudName, h, o, c, img }: StyleContext): string {
+  return [
+    `https://res.cloudinary.com/${cloudName}/image/fetch`,
+    // base with auto-contrast for extra punch
+    `w_1080,h_1080,c_fill,f_auto,q_auto,e_auto_contrast`,
+    // deep purple-tinted scrim
+    `co_rgb:0d0628,l_text:Arial_10:%20,w_1080,h_440,o_82,g_south`,
+    // purple accent bar above footer
+    `co_rgb:9333ea,l_text:Arial_6:%20,w_1080,h_4,o_90,g_south,y_90`,
+    // headline
+    `co_rgb:ffffff,l_text:Arial_58_bold_center:${h},w_940,c_fit,g_south,y_160`,
+    // footer text
+    `co_rgb:e8d5ff,l_text:Arial_28_bold:${o},g_south_west,x_40,y_38`,
+    `co_rgb:c4b5fd,l_text:Arial_24:${c},g_south_east,x_40,y_40`,
+    img,
+  ].join('/');
+}
+
+/** Subtle fade, refined small text — elegant for established orgs. */
+function styleMinimal({ cloudName, h, o, c, img }: StyleContext): string {
+  return [
+    `https://res.cloudinary.com/${cloudName}/image/fetch`,
+    `w_1080,h_1080,c_fill,f_auto,q_auto`,
+    // gentle gradient-like scrim (two stacked semi-transparent layers for a softer fade)
+    `co_black,l_text:Arial_10:%20,w_1080,h_420,o_30,g_south`,
+    `co_black,l_text:Arial_10:%20,w_1080,h_220,o_40,g_south`,
+    // headline: smaller, refined
+    `co_rgb:ffffff,l_text:Arial_44_bold_center:${h},w_880,c_fit,g_south,y_130`,
+    // hairline divider
+    `co_rgb:ffffff,l_text:Arial_2:%20,w_820,h_1,o_45,g_south,y_88`,
+    // footer text — slightly dimmed for elegance
+    `co_rgb:ffffffee,l_text:Arial_26_bold:${o},g_south_west,x_40,y_36`,
+    `co_rgb:ffffffaa,l_text:Arial_22:${c},g_south_east,x_40,y_40`,
+    img,
+  ].join('/');
+}
+
+// ─── Dispatcher ───────────────────────────────────────────────────────────────
+
 function buildCloudinaryUrl(
-  headline: string,
-  orgName: string,
-  contact: string,
+  strategy: AdStrategy,
+  input: AdInput,
   imageUrl: string
 ): string {
   const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
 
-  const encodedHeadline = encodeURIComponent(sanitizeForCloudinary(headline));
-  const encodedOrgName  = encodeURIComponent(sanitizeForCloudinary(orgName));
-  const encodedContact  = encodeURIComponent(sanitizeForCloudinary(contact));
-  const encodedImageUrl = encodeURIComponent(imageUrl);
+  const ctx: StyleContext = {
+    cloudName,
+    h:   encodeURIComponent(sanitizeForCloudinary(strategy.headline)),
+    o:   encodeURIComponent(sanitizeForCloudinary(input.orgName)),
+    c:   encodeURIComponent(sanitizeForCloudinary(input.contact)),
+    img: encodeURIComponent(imageUrl),
+  };
 
-  // ── Layer stack (bottom → top) ─────────────────────────────────────────────
-  // 1. Base: 1080×1080 square crop
-  const base = `w_1080,h_1080,c_fill,f_auto,q_auto`;
+  const builders: Record<AdVisualStyle, (ctx: StyleContext) => string> = {
+    'bottom-bar':   styleBottomBar,
+    'bold-center':  styleBoldCenter,
+    'top-headline': styleTopHeadline,
+    'side-panel':   styleSidePanel,
+    'dramatic':     styleDramatic,
+    'minimal':      styleMinimal,
+  };
 
-  // 2. Scrim: full-width dark gradient bar covering the lower ~420px
-  const scrim = [
-    `co_black`,
-    `l_text:Arial_10:%20`,   // invisible 1-char "canvas"
-    `w_1080,h_420`,
-    `o_65`,
-    `g_south`,
-  ].join(',');
-
-  // 3. Headline: bold, large, word-wrapped to 940px, centred in the scrim
-  //    c_fit + w_ enables Cloudinary's automatic line-breaking
-  const headlineLayer = [
-    `co_rgb:ffffff`,
-    `l_text:Arial_56_bold_center:${encodedHeadline}`,
-    `w_940,c_fit`,
-    `g_south`,
-    `y_160`,
-  ].join(',');
-
-  // 4. Footer divider: a 1px white hairline above the footer strip
-  const divider = [
-    `co_rgb:ffffff`,
-    `l_text:Arial_2:%20`,
-    `w_980,h_1`,
-    `o_40`,
-    `g_south`,
-    `y_90`,
-  ].join(',');
-
-  // 5. Org name: bottom-left of the footer strip
-  const orgNameLayer = [
-    `co_rgb:ffffff`,
-    `l_text:Arial_28_bold:${encodedOrgName}`,
-    `g_south_west`,
-    `x_40`,
-    `y_38`,
-  ].join(',');
-
-  // 6. Contact info: bottom-right of the footer strip
-  const contactLayer = [
-    `co_rgb:ffffffcc`,
-    `l_text:Arial_24:${encodedContact}`,
-    `g_south_east`,
-    `x_40`,
-    `y_40`,
-  ].join(',');
-
-  return [
-    `https://res.cloudinary.com/${cloudName}/image/fetch`,
-    base,
-    scrim,
-    headlineLayer,
-    divider,
-    orgNameLayer,
-    contactLayer,
-    encodedImageUrl,
-  ].join('/');
+  const style = strategy.visualStyle ?? 'bottom-bar';
+  const builder = builders[style] ?? styleBottomBar;
+  return builder(ctx);
 }
 
 // ─── Hook ─────────────────────────────────────────────────────────────────────
@@ -377,7 +480,7 @@ export function useAdPipeline() {
 
       // ── Builder: compose Cloudinary URL ───────────────────────────────────
       setStage('building', 'Assembling final ad...');
-      const cloudinaryUrl = buildCloudinaryUrl(strategy!.headline, input.orgName, input.contact, imageUrl);
+      const cloudinaryUrl = buildCloudinaryUrl(strategy!, input, imageUrl);
 
       setState({
         stage: 'done',

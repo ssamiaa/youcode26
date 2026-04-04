@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react';
 import { useAdPipeline, EVALUATION_ENABLED } from '../hooks/useAdPipeline';
-import type { AdInput, PipelineStage } from '../hooks/useAdPipeline';
+import type { AdInput, AdVisualStyle, PipelineStage } from '../hooks/useAdPipeline';
 import './AdPipelineUI.css';
 
 // ─── Step Definitions ────────────────────────────────────────────────────────
@@ -36,6 +36,17 @@ function getProgressOrdinal(stage: PipelineStage): number {
   const i = order.indexOf(stage);
   return i === -1 ? 0 : i;
 }
+
+// ─── Visual Style Meta ───────────────────────────────────────────────────────
+
+const VISUAL_STYLE_META: Record<AdVisualStyle, { label: string; icon: string; accent: string }> = {
+  'bottom-bar':   { label: 'Bottom Bar',   icon: '▬', accent: '#6c63ff' },
+  'bold-center':  { label: 'Bold Center',  icon: '◉', accent: '#ef4444' },
+  'top-headline': { label: 'Top Headline', icon: '▀', accent: '#06b6d4' },
+  'side-panel':   { label: 'Side Panel',   icon: '▌', accent: '#10b981' },
+  'dramatic':     { label: 'Dramatic',     icon: '◆', accent: '#9333ea' },
+  'minimal':      { label: 'Minimal',      icon: '·', accent: '#f59e0b' },
+};
 
 // ─── Sub-Components ──────────────────────────────────────────────────────────
 
@@ -128,11 +139,25 @@ function AdResult({
           </svg>
           Ad Generated
         </div>
-        <div className="score-pill">
-          Score: {result.evaluation.score}/10
-          {result.attempts > 1 && (
-            <span className="attempts-note"> · {result.attempts} attempts</span>
-          )}
+        <div className="result-header-pills">
+          {result.strategy.visualStyle && (() => {
+            const meta = VISUAL_STYLE_META[result.strategy.visualStyle];
+            return (
+              <div
+                className="style-pill"
+                style={{ '--style-accent': meta.accent } as React.CSSProperties}
+              >
+                <span className="style-icon">{meta.icon}</span>
+                {meta.label}
+              </div>
+            );
+          })()}
+          <div className="score-pill">
+            Score: {result.evaluation.score}/10
+            {result.attempts > 1 && (
+              <span className="attempts-note"> · {result.attempts} attempts</span>
+            )}
+          </div>
         </div>
       </div>
 
@@ -272,6 +297,28 @@ function AdResult({
             <div className="insight-content">
               <div className="insight-label">Tone & Voice</div>
               <p className="insight-text">{result.strategy.tone}</p>
+            </div>
+          </div>
+
+          <div className="insight-card">
+            <div className="insight-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <rect x="3" y="3" width="18" height="18" rx="2" />
+                <path d="M3 9h18M9 21V9" />
+              </svg>
+            </div>
+            <div className="insight-content">
+              <div className="insight-label">Visual Style</div>
+              <p className="insight-text">
+                {result.strategy.visualStyle && (
+                  <strong style={{ color: VISUAL_STYLE_META[result.strategy.visualStyle]?.accent }}>
+                    {VISUAL_STYLE_META[result.strategy.visualStyle]?.label}
+                  </strong>
+                )}
+                {result.strategy.visualStyleRationale && (
+                  <> — {result.strategy.visualStyleRationale}</>
+                )}
+              </p>
             </div>
           </div>
         </div>
