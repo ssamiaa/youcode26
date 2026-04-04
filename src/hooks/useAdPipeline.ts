@@ -103,16 +103,38 @@ function extractJSON<T>(raw: string): T {
 // ─── Pipeline Steps ──────────────────────────────────────────────────────────
 
 async function runStrategist(input: AdInput, feedback?: string): Promise<AdStrategy> {
-  const system = `You are an award-winning creative director specializing exclusively in non-profit marketing.
-Your copy must be emotionally powerful, specific to the organization's actual mission, and avoid all clichés.
-Good Pexels queries are concrete and visual (e.g. "volunteers planting trees community" not "people helping nature").
+  const system = `You are an expert non-profit advertising strategist trained in direct-response copywriting.
+You write ads that perform — not ads that just sound good. Every element you produce must follow these principles:
+
+1. AUDIENCE PERSONA — Before writing, silently model the target donor/volunteer for this specific org:
+   their age bracket, motivations, emotional triggers, and what objections they might have.
+   The copy must speak directly to that person's values, not to a generic audience.
+
+2. CLEAR, SINGLE MESSAGE — Each ad communicates exactly ONE idea. No compound asks, no laundry lists.
+   If you can't say what the ad is about in five words, simplify.
+
+3. BRAND VOICE — The organization's name must appear naturally in either the headline or body copy.
+   The tone should match the sector (urgent for crisis orgs, warm for community orgs, authoritative for health orgs, etc.).
+
+4. PROVEN COPY STRUCTURE — Use one of these frameworks:
+   - Problem → Solution → Proof  (best for crisis/urgent sectors)
+   - Aspiration → Bridge → Call  (best for community/education sectors)
+   - Social Proof → Mission → Ask (best for well-known regional orgs)
+
+5. SPECIFICITY OVER VAGUENESS — Use concrete numbers, places, or outcomes wherever possible.
+   "Fed 4,200 families" beats "helped the community". "Vancouver's street youth" beats "people in need".
+
+6. PEXELS QUERY — Must be 3–5 words, highly visual, and search for what is LITERALLY in the ideal photo.
+   Think like a stock photographer: describe the subject, action, and setting. No abstract nouns.
+   Good: "elderly woman receiving meal delivery"   Bad: "community support kindness"
+
 RESPOND WITH VALID JSON ONLY — no markdown, no explanation, just the JSON object.`;
 
   const feedbackSection = feedback
     ? `\n\nYour previous attempt was rejected by the critic. Address this feedback directly:\n"${feedback}"`
     : '';
 
-  const user = `Create an ad for this non-profit organization:
+  const user = `Write a high-performing ad for this non-profit organization.
 
 Organization: ${input.orgName}
 Sector: ${input.sector}
@@ -121,9 +143,9 @@ Location: ${input.location}${feedbackSection}
 
 Return this exact JSON structure:
 {
-  "headline": "Short, powerful headline (max 8 words, no punctuation)",
-  "body": "1–2 sentence body copy emphasizing local, measurable impact",
-  "pexels_query": "2–4 word specific visual search phrase for Pexels (avoid abstract terms)"
+  "headline": "Headline: max 8 words, includes the org name OR a specific impact stat, no punctuation",
+  "body": "1–2 sentences of body copy. Must name '${input.orgName}' if not in headline. Use one concrete detail (number, place, or outcome). End with an implicit or explicit call to action.",
+  "pexels_query": "3–5 word literal photo description for Pexels search"
 }`;
 
   const raw = await callClaude(system, user);
@@ -195,18 +217,40 @@ async function runHunter(query: string): Promise<string> {
 
 function buildCloudinaryUrl(headline: string, imageUrl: string): string {
   const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
-  // Cloudinary text overlays: encode the headline, replace %20 with spaces for the overlay param
-  const encodedHeadline = encodeURIComponent(headline.replace(/\//g, ' '));
+
+  // 1. Sanitize and Escape the Headline
+  // We use double-encoding for commas because Cloudinary uses commas as delimiters.
+  const cleanHeadline = headline
+    .replace(/\//g, ' ')         // Slashes break URL paths
+    .replace(/,/g, '%252C');    // Comma must be escaped for Cloudinary layers
+
+  const encodedHeadline = encodeURIComponent(cleanHeadline);
   const encodedImageUrl = encodeURIComponent(imageUrl);
 
-  return [
-    `https://res.cloudinary.com/${cloudName}/image/fetch`,
-    `w_1080,h_1080,c_fill`,
-    `f_auto,q_auto`,
-    `b_black,o_50,l_rect,w_1080,h_350,g_south`,
-    `co_rgb:ffffff,l_text:Arial_60_bold_center:${encodedHeadline},g_south,y_120`,
-    encodedImageUrl,
-  ].join('/');
+  // 2. Base Configuration (1080x1080 Square Ad)
+  const baseConfig = `w_1080,h_1080,c_fill,f_auto,q_auto`;
+
+  // 3. The Scrim (Background Box)
+  // We create a "space" character, stretch it to 1080px wide, and make it black/transparent.
+  const scrim = [
+    `co_black`,
+    `l_text:Arial_10:%20`, // The "Space" primitive
+    `w_1080,h_350`,       // Box dimensions
+    `o_50`,               // 50% opacity
+    `g_south`             // Pinned to the bottom
+  ].join(',');
+
+  // 4. The Headline Text
+  // We pin to south and use y_120 to provide "padding" from the bottom edge.
+  const textLayer = [
+    `co_rgb:ffffff`,
+    `l_text:Arial_60_bold:${encodedHeadline}`,
+    `g_south`,
+    `y_120`
+  ].join(',');
+
+  // 5. Final Assembly
+  return `https://res.cloudinary.com/${cloudName}/image/fetch/${baseConfig}/${scrim}/${textLayer}/${encodedImageUrl}`;
 }
 
 // ─── Hook ─────────────────────────────────────────────────────────────────────
