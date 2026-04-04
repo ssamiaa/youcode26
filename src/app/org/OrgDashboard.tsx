@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import ConversationUI, { type MatchResult } from '../../components/conversation/ConversationUI'
+import PipelineBoard from '../../components/pipeline/PipelineBoard'
 
 type Tab = 'find' | 'pipeline'
 
@@ -74,7 +75,7 @@ export default function OrgDashboard() {
           <FindTab volunteers={volunteers} onSend={handleSend} />
         )}
         {tab === 'pipeline' && (
-          <PlaceholderTab label="Pipeline" description="Volunteer pipeline coming soon." />
+          <PipelineBoard />
         )}
       </main>
     </div>
@@ -219,15 +220,3 @@ function VolunteerCardItem({ volunteer: v }: { volunteer: VolunteerCard }) {
   )
 }
 
-// ── Placeholder for future tabs ──────────────────────────────────────────────
-
-function PlaceholderTab({ label, description }: { label: string; description: string }) {
-  return (
-    <div className="flex-1 flex items-center justify-center px-4">
-      <div className="text-center">
-        <p className="font-semibold text-black text-sm">{label}</p>
-        <p className="text-sm text-gray-400 mt-1">{description}</p>
-      </div>
-    </div>
-  )
-}
