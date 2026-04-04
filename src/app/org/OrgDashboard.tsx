@@ -4,7 +4,6 @@ import PipelineBoard from '../../components/pipeline/PipelineBoard'
 
 type Tab = 'find' | 'pipeline'
 
-// Volunteer result shape — matches volunteers table + match engine fields
 export interface VolunteerCard {
   volunteer_ID: string
   first_name: string
@@ -19,20 +18,20 @@ export interface VolunteerCard {
   prior_volunteer_experience?: boolean
   has_vehicle?: boolean
   background_check_status?: string
-  // Populated by /api/match
-  match_score?: number       // 0–100
-  match_reason?: string      // plain-language explanation
+  match_score?: number
+  match_reason?: string
 }
 
 export default function OrgDashboard() {
   const [tab, setTab] = useState<Tab>('find')
   const [volunteers, setVolunteers] = useState<VolunteerCard[]>([])
+  const [sessionTag, setSessionTag] = useState('')
 
   async function handleSend(text: string): Promise<MatchResult> {
     const res = await fetch('/api/match', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message: text }),
+      body: JSON.stringify({ message: text, session_tag: sessionTag }),
     })
     if (!res.ok) throw new Error(`Server error: ${res.status}`)
     const data: MatchResult = await res.json()
@@ -42,12 +41,10 @@ export default function OrgDashboard() {
 
   return (
     <div className="min-h-screen bg-white flex flex-col">
-      {/* Top bar */}
       <header className="border-b border-gray-200 px-4 py-3">
         <p className="text-xs font-bold tracking-widest text-gray-400 uppercase">Organizer</p>
       </header>
 
-      {/* Tabs */}
       <nav aria-label="Dashboard sections" className="border-b border-gray-200 px-4 flex gap-0">
         {([
           { id: 'find',     label: 'Find volunteers' },
@@ -69,27 +66,31 @@ export default function OrgDashboard() {
         ))}
       </nav>
 
-      {/* Tab content */}
       <main className="flex-1 flex flex-col overflow-hidden">
         {tab === 'find' && (
-          <FindTab volunteers={volunteers} onSend={handleSend} />
+          <FindTab
+            volunteers={volunteers}
+            onSend={handleSend}
+            sessionTag={sessionTag}
+            onSessionTagChange={setSessionTag}
+          />
         )}
-        {tab === 'pipeline' && (
-          <PipelineBoard />
-        )}
+        {tab === 'pipeline' && <PipelineBoard />}
       </main>
     </div>
   )
 }
 
-// ── Find tab ────────────────────────────────────────────────────────────────
+// ── Find tab ─────────────────────────────────────────────────────────────────
 
 interface FindTabProps {
   volunteers: VolunteerCard[]
   onSend: (text: string) => Promise<MatchResult>
+  sessionTag: string
+  onSessionTagChange: (tag: string) => void
 }
 
-function FindTab({ volunteers, onSend }: FindTabProps) {
+function FindTab({ volunteers, onSend, sessionTag, onSessionTagChange }: FindTabProps) {
   return (
     <div className="flex-1 overflow-hidden flex flex-col lg:flex-row gap-4 p-4">
 
@@ -97,17 +98,31 @@ function FindTab({ volunteers, onSend }: FindTabProps) {
       <section
         aria-label="Find volunteers by conversation"
         className="flex-shrink-0 rounded-2xl border border-gray-200 overflow-hidden shadow-sm
-                   flex flex-col
-                   h-[420px] lg:h-auto lg:w-[520px]"
+                   flex flex-col h-[460px] lg:h-auto lg:w-[520px]"
       >
-        <ConversationUI onSendMessage={onSend} />
+        {/* Session tag input sits above the chat */}
+        <div className="border-b border-gray-100 px-4 py-2.5 flex items-center gap-2">
+          <label htmlFor="session-tag" className="text-xs text-gray-400 flex-shrink-0">
+            Search label
+          </label>
+          <input
+            id="session-tag"
+            type="text"
+            value={sessionTag}
+            onChange={e => onSessionTagChange(e.target.value)}
+            placeholder="e.g. Food bank Saturday, Event setup…"
+            className="flex-1 text-xs text-black bg-transparent border-none outline-none placeholder:text-gray-300"
+          />
+        </div>
+        <div className="flex-1 min-h-0 flex flex-col">
+          <ConversationUI onSendMessage={onSend} />
+        </div>
       </section>
 
       {/* Right — results card */}
       <section
         aria-label="Matched volunteers"
-        className="flex-1 rounded-2xl border border-gray-200 shadow-sm overflow-y-auto p-5
-                   min-h-[200px]"
+        className="flex-1 rounded-2xl border border-gray-200 shadow-sm overflow-y-auto p-5 min-h-[200px]"
       >
         {volunteers.length === 0 ? (
           <div className="h-full flex items-center justify-center">
@@ -117,12 +132,19 @@ function FindTab({ volunteers, onSend }: FindTabProps) {
           </div>
         ) : (
           <>
-            <h2 className="text-sm font-bold text-black mb-4">
-              {volunteers.length} match{volunteers.length !== 1 ? 'es' : ''} found
-            </h2>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-sm font-bold text-black">
+                {volunteers.length} match{volunteers.length !== 1 ? 'es' : ''} found
+              </h2>
+              {sessionTag && (
+                <span className="text-xs border border-gray-300 text-gray-600 px-2 py-0.5 rounded-full">
+                  {sessionTag}
+                </span>
+              )}
+            </div>
             <ul className="grid grid-cols-1 xl:grid-cols-2 gap-3">
               {volunteers.map(v => (
-                <VolunteerCardItem key={v.volunteer_ID} volunteer={v} />
+                <VolunteerCardItem key={v.volunteer_ID} volunteer={v} sessionTag={sessionTag} />
               ))}
             </ul>
           </>
@@ -133,9 +155,9 @@ function FindTab({ volunteers, onSend }: FindTabProps) {
   )
 }
 
-// ── Volunteer card ───────────────────────────────────────────────────────────
+// ── Volunteer card ────────────────────────────────────────────────────────────
 
-function VolunteerCardItem({ volunteer: v }: { volunteer: VolunteerCard }) {
+function VolunteerCardItem({ volunteer: v, sessionTag }: { volunteer: VolunteerCard; sessionTag: string }) {
   const [connecting, setConnecting] = useState(false)
   const [connected, setConnected] = useState(false)
 
@@ -145,7 +167,7 @@ function VolunteerCardItem({ volunteer: v }: { volunteer: VolunteerCard }) {
       await fetch('/api/outreach', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ volunteer_ID: v.volunteer_ID }),
+        body: JSON.stringify({ volunteer_ID: v.volunteer_ID, session_tag: sessionTag }),
       })
       setConnected(true)
     } catch {
@@ -157,7 +179,6 @@ function VolunteerCardItem({ volunteer: v }: { volunteer: VolunteerCard }) {
 
   return (
     <li className="border border-gray-200 rounded-2xl p-4 flex flex-col gap-3">
-      {/* Header row: name + match score */}
       <div className="flex items-start justify-between gap-2">
         <p className="font-semibold text-sm text-black">{v.first_name} {v.last_name}</p>
         {v.match_score != null && (
@@ -170,19 +191,16 @@ function VolunteerCardItem({ volunteer: v }: { volunteer: VolunteerCard }) {
         )}
       </div>
 
-      {/* Plain-language match reason */}
       {v.match_reason && (
         <p className="text-xs text-gray-600 leading-relaxed">{v.match_reason}</p>
       )}
 
-      {/* Key details */}
       <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-gray-500">
         <span>{v.neighbourhood}</span>
         {v.availability && <span>{v.availability}</span>}
         {v.hours_available_per_month && <span>{v.hours_available_per_month}h/mo</span>}
       </div>
 
-      {/* Tags */}
       <div className="flex flex-wrap gap-1.5">
         {v.skills?.map(s => (
           <span key={s} className="text-xs bg-gray-100 text-black px-2 py-0.5 rounded-full">{s}</span>
@@ -200,7 +218,6 @@ function VolunteerCardItem({ volunteer: v }: { volunteer: VolunteerCard }) {
         )}
       </div>
 
-      {/* Connect button */}
       <button
         type="button"
         onClick={handleConnect}
@@ -219,4 +236,3 @@ function VolunteerCardItem({ volunteer: v }: { volunteer: VolunteerCard }) {
     </li>
   )
 }
-
