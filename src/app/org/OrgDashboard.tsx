@@ -3,7 +3,7 @@ import ConversationUI, { type MatchResult } from '../../components/conversation/
 
 type Tab = 'find' | 'pipeline'
 
-// Volunteer result shape — matches volunteers table
+// Volunteer result shape — matches volunteers table + match engine fields
 export interface VolunteerCard {
   volunteer_ID: string
   first_name: string
@@ -18,6 +18,9 @@ export interface VolunteerCard {
   prior_volunteer_experience?: boolean
   has_vehicle?: boolean
   background_check_status?: string
+  // Populated by /api/match
+  match_score?: number       // 0–100
+  match_reason?: string      // plain-language explanation
 }
 
 export default function OrgDashboard() {
@@ -87,27 +90,36 @@ interface FindTabProps {
 
 function FindTab({ volunteers, onSend }: FindTabProps) {
   return (
-    <div className="flex-1 flex flex-col overflow-y-auto">
-      <div className="w-full max-w-2xl mx-auto px-6 flex flex-col flex-1">
-      {/* Conversation section — fixed height, self-contained */}
-      <section aria-label="Find volunteers by conversation" className="flex-shrink-0 border border-gray-200 rounded-2xl overflow-hidden mt-6">
-        <div className="h-[420px] flex flex-col">
-          <ConversationUI onSendMessage={onSend} />
-        </div>
+    <div className="flex-1 overflow-hidden flex flex-col lg:flex-row gap-4 p-4">
+
+      {/* Left — conversation card */}
+      <section
+        aria-label="Find volunteers by conversation"
+        className="flex-shrink-0 rounded-2xl border border-gray-200 overflow-hidden shadow-sm
+                   flex flex-col
+                   h-[420px] lg:h-auto lg:w-[520px]"
+      >
+        <ConversationUI onSendMessage={onSend} />
       </section>
 
-      {/* Results section — grows below */}
-      <section aria-label="Matched volunteers" className="py-6">
+      {/* Right — results card */}
+      <section
+        aria-label="Matched volunteers"
+        className="flex-1 rounded-2xl border border-gray-200 shadow-sm overflow-y-auto p-5
+                   min-h-[200px]"
+      >
         {volunteers.length === 0 ? (
-          <p className="text-sm text-gray-400 text-center py-8">
-            Matched volunteers will appear here after your search.
-          </p>
+          <div className="h-full flex items-center justify-center">
+            <p className="text-sm text-gray-400 text-center">
+              Matched volunteers will appear here after your search.
+            </p>
+          </div>
         ) : (
           <>
             <h2 className="text-sm font-bold text-black mb-4">
               {volunteers.length} match{volunteers.length !== 1 ? 'es' : ''} found
             </h2>
-            <ul className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <ul className="grid grid-cols-1 xl:grid-cols-2 gap-3">
               {volunteers.map(v => (
                 <VolunteerCardItem key={v.volunteer_ID} volunteer={v} />
               ))}
@@ -115,7 +127,7 @@ function FindTab({ volunteers, onSend }: FindTabProps) {
           </>
         )}
       </section>
-      </div>
+
     </div>
   )
 }
@@ -123,46 +135,86 @@ function FindTab({ volunteers, onSend }: FindTabProps) {
 // ── Volunteer card ───────────────────────────────────────────────────────────
 
 function VolunteerCardItem({ volunteer: v }: { volunteer: VolunteerCard }) {
+  const [connecting, setConnecting] = useState(false)
+  const [connected, setConnected] = useState(false)
+
+  async function handleConnect() {
+    setConnecting(true)
+    try {
+      await fetch('/api/outreach', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ volunteer_ID: v.volunteer_ID }),
+      })
+      setConnected(true)
+    } catch {
+      // silently fail — organizer can retry
+    } finally {
+      setConnecting(false)
+    }
+  }
+
   return (
-    <li className="border border-gray-200 rounded-2xl p-4 flex flex-col gap-2 hover:border-black transition-colors duration-150">
+    <li className="border border-gray-200 rounded-2xl p-4 flex flex-col gap-3">
+      {/* Header row: name + match score */}
       <div className="flex items-start justify-between gap-2">
         <p className="font-semibold text-sm text-black">{v.first_name} {v.last_name}</p>
-        <div className="flex items-center gap-2 flex-shrink-0">
-          {v.background_check_status && (
-            <span className="text-xs text-gray-500">{v.background_check_status}</span>
-          )}
-          {v.has_vehicle && (
-            <span className="text-xs text-gray-500">Has vehicle</span>
-          )}
-        </div>
+        {v.match_score != null && (
+          <span
+            className="text-xs font-bold tabular-nums text-black bg-gray-100 px-2 py-0.5 rounded-full flex-shrink-0"
+            aria-label={`Match score ${v.match_score} out of 100`}
+          >
+            {v.match_score}%
+          </span>
+        )}
       </div>
 
+      {/* Plain-language match reason */}
+      {v.match_reason && (
+        <p className="text-xs text-gray-600 leading-relaxed">{v.match_reason}</p>
+      )}
+
+      {/* Key details */}
       <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-gray-500">
         <span>{v.neighbourhood}</span>
-        {v.age && <span>Age {v.age}</span>}
-        {v.hours_available_per_month && <span>{v.hours_available_per_month}h/mo</span>}
         {v.availability && <span>{v.availability}</span>}
+        {v.hours_available_per_month && <span>{v.hours_available_per_month}h/mo</span>}
       </div>
 
-      {v.skills && v.skills.length > 0 && (
-        <ul className="flex flex-wrap gap-1.5" aria-label="Skills">
-          {v.skills.map(s => (
-            <li key={s} className="text-xs bg-gray-100 text-black px-2 py-0.5 rounded-full">{s}</li>
-          ))}
-        </ul>
-      )}
+      {/* Tags */}
+      <div className="flex flex-wrap gap-1.5">
+        {v.skills?.map(s => (
+          <span key={s} className="text-xs bg-gray-100 text-black px-2 py-0.5 rounded-full">{s}</span>
+        ))}
+        {v.languages_spoken?.filter((_, i) => i > 0 || (v.languages_spoken?.length ?? 0) > 1).map(l => (
+          <span key={l} className="text-xs border border-gray-300 text-gray-600 px-2 py-0.5 rounded-full">{l}</span>
+        ))}
+        {v.background_check_status && (
+          <span className="text-xs border border-gray-300 text-gray-600 px-2 py-0.5 rounded-full">
+            {v.background_check_status}
+          </span>
+        )}
+        {v.has_vehicle && (
+          <span className="text-xs border border-gray-300 text-gray-600 px-2 py-0.5 rounded-full">Has vehicle</span>
+        )}
+      </div>
 
-      {v.cause_areas_of_interest && v.cause_areas_of_interest.length > 0 && (
-        <ul className="flex flex-wrap gap-1.5" aria-label="Cause areas">
-          {v.cause_areas_of_interest.map(c => (
-            <li key={c} className="text-xs border border-gray-300 text-gray-600 px-2 py-0.5 rounded-full">{c}</li>
-          ))}
-        </ul>
-      )}
-
-      {v.languages_spoken && v.languages_spoken.length > 1 && (
-        <p className="text-xs text-gray-400">{v.languages_spoken.join(', ')}</p>
-      )}
+      {/* Connect button */}
+      <button
+        type="button"
+        onClick={handleConnect}
+        disabled={connecting || connected}
+        className={`mt-1 w-full py-2 text-xs font-semibold rounded-xl border transition-colors duration-150
+          focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-black
+          disabled:cursor-not-allowed
+          ${connected
+            ? 'bg-white text-gray-400 border-gray-200'
+            : 'bg-black text-white border-black hover:bg-gray-900 disabled:opacity-50'
+          }`}
+        aria-label={`Connect with ${v.first_name} ${v.last_name}`}
+      >
+        {connected ? 'Outreach sent' : connecting ? 'Sending…' : 'Connect'}
+      </button>
     </li>
   )
 }
