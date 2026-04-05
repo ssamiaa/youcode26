@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAdPipeline } from '../hooks/useAdPipeline';
 import type { AdInput, PipelineStep, AdArchetype, PostBlueprint, AlignmentResult, CopyAssets, ScrimStyle } from '../hooks/useAdPipeline';
 import { supabase } from '../lib/supabaseClient';
@@ -101,7 +101,7 @@ function PipelineProgress({
 
 // ─── Progressive Reveal Cards ────────────────────────────────────────────────
 
-function BlueprintCard({ blueprint }: { blueprint: PostBlueprint }) {
+function BlueprintCard({ blueprint, focusedInsight }: { blueprint: PostBlueprint; focusedInsight?: string | null }) {
   const meta = ARCHETYPE_META[blueprint.archetype];
   return (
     <div className="reveal-card reveal-blueprint">
@@ -115,6 +115,14 @@ function BlueprintCard({ blueprint }: { blueprint: PostBlueprint }) {
           {blueprint.archetype}
         </span>
       </div>
+      {focusedInsight && (
+        <div className="blueprint-anchor-row">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+          </svg>
+          <span>"{focusedInsight}"</span>
+        </div>
+      )}
       <p className="reveal-idea">"{blueprint.idea}"</p>
       <div className="reveal-meta-row">
         <div className="reveal-meta-item">
@@ -202,10 +210,11 @@ interface AdResultProps {
   blueprint: PostBlueprint;
   imageSummary: string;
   alignment: AlignmentResult;
+  focusedInsight?: string | null;
   onReset: () => void;
 }
 
-function AdResult({ cloudinaryUrl, imageUrl, copyAssets, blueprint, imageSummary, alignment, onReset }: AdResultProps) {
+function AdResult({ cloudinaryUrl, imageUrl, copyAssets, blueprint, imageSummary, alignment, focusedInsight, onReset }: AdResultProps) {
   const [imgLoaded, setImgLoaded] = useState(false);
   const [imgError, setImgError]   = useState(false);
   const archetypeMeta = ARCHETYPE_META[blueprint.archetype];
@@ -219,7 +228,7 @@ function AdResult({ cloudinaryUrl, imageUrl, copyAssets, blueprint, imageSummary
           </svg>
           Ad Generated
         </div>
-        <div className="result-header-pills">
+          <div className="result-header-pills">
           <div
             className="archetype-pill"
             style={{ '--archetype-color': archetypeMeta.color } as React.CSSProperties}
@@ -227,6 +236,14 @@ function AdResult({ cloudinaryUrl, imageUrl, copyAssets, blueprint, imageSummary
             <span>{archetypeMeta.icon}</span>
             {blueprint.archetype}
           </div>
+          {focusedInsight && (
+            <div className="anchor-insight-pill">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+              </svg>
+              Targeted Insight
+            </div>
+          )}
           <div className="placement-pill">{SCRIM_LABELS[copyAssets.builderSpec.scrimStyle]}</div>
         </div>
       </div>
@@ -314,6 +331,20 @@ function AdResult({ cloudinaryUrl, imageUrl, copyAssets, blueprint, imageSummary
           Pipeline Rationale
         </div>
         <div className="insights-grid">
+          {focusedInsight && (
+            <div className="insight-card insight-card--anchor">
+              <div className="insight-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                  <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+                </svg>
+              </div>
+              <div className="insight-content">
+                <div className="insight-label">Anchor Insight</div>
+                <p className="insight-text">"{focusedInsight}"</p>
+              </div>
+            </div>
+          )}
+
           <div className="insight-card">
             <div className="insight-icon">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -384,15 +415,22 @@ function AdResult({ cloudinaryUrl, imageUrl, copyAssets, blueprint, imageSummary
   );
 }
 
+
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 const ARCH_STRIP = ['Architect', 'Hunter', 'Observer', 'Aligner', 'Copywriter', 'Builder'] as const;
 
-export function AdPipelineUI({ onBack }: { onBack?: () => void } = {}) {
+export function AdPipelineUI({ onBack, insightsContext, onInsightsConsumed }: {
+  onBack?: () => void;
+  insightsContext?: string;
+  /** Called once the insights-driven pipeline has been auto-started, so the
+   *  parent can clear the context and prevent it re-firing on future visits. */
+  onInsightsConsumed?: () => void;
+} = {}) {
   const {
     step, stepMessage,
     blueprint, imageUrl, imageSummary, alignment, copyAssets, cloudinaryUrl,
-    error, run, reset,
+    focusedInsight, error, run, reset,
   } = useAdPipeline();
 
   // ── Fetch org from Supabase ───────────────────────────────────────────────
@@ -400,6 +438,9 @@ export function AdPipelineUI({ onBack }: { onBack?: () => void } = {}) {
   const [loadingOrg, setLoadingOrg] = useState(true);
   const [orgFetchError, setOrgFetchError] = useState<string | null>(null);
   const [mission, setMission] = useState('');
+
+  // Track which insights string we've already consumed so we never double-fire.
+  const consumedInsightRef = useRef<string | null>(null);
 
   useEffect(() => {
     async function fetchOrg() {
@@ -421,7 +462,7 @@ export function AdPipelineUI({ onBack }: { onBack?: () => void } = {}) {
       }
 
       if (!data) {
-        setOrgFetchError('No organization found. Please register your organization first at /org/signup.');
+        setOrgFetchError('No organization found. Please register your organization first.');
         setLoadingOrg(false);
         return;
       }
@@ -431,12 +472,28 @@ export function AdPipelineUI({ onBack }: { onBack?: () => void } = {}) {
         sector:   data.sector    || 'Other',
         mission:  '',
         location: [data.city, data.province].filter(Boolean).join(', '),
-        contact:  [data.city, data.province].filter(Boolean).join(', '),
+        contact:  data.website || data.email || [data.city, data.province].filter(Boolean).join(', '),
       });
       setLoadingOrg(false);
     }
     fetchOrg();
   }, []);
+
+  // ── Auto-start when insights context arrives ──────────────────────────────
+  // Fires whenever insightsContext or orgInput changes. The ref guard ensures
+  // each unique insights string triggers exactly one pipeline run.
+  useEffect(() => {
+    if (!insightsContext?.trim() || !orgInput) {
+      // Context was cleared after being consumed — reset so the next click works.
+      consumedInsightRef.current = null;
+      return;
+    }
+    if (consumedInsightRef.current === insightsContext) return;
+
+    consumedInsightRef.current = insightsContext;
+    onInsightsConsumed?.();
+    run({ ...orgInput, mission: '', insightsContext });
+  }, [insightsContext, orgInput, onInsightsConsumed, run]);
 
   const isProcessing = (
     step === 'blueprint' || step === 'sourcing' || step === 'observing' ||
@@ -473,6 +530,7 @@ export function AdPipelineUI({ onBack }: { onBack?: () => void } = {}) {
       </div>
 
       <main className="pipeline-body">
+
         {/* ── Idle: show Generate button ── */}
         {step === 'idle' && (
           loadingOrg ? (
@@ -518,7 +576,7 @@ export function AdPipelineUI({ onBack }: { onBack?: () => void } = {}) {
               <button
                 className="btn-generate"
                 disabled={!mission.trim()}
-                onClick={() => run({ ...orgInput, mission: mission.trim() })}
+                onClick={() => run({ ...orgInput, mission: mission.trim(), insightsContext })}
               >
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
@@ -534,7 +592,7 @@ export function AdPipelineUI({ onBack }: { onBack?: () => void } = {}) {
           <div className="processing-view">
             <PipelineProgress step={step} stepMessage={stepMessage} />
             <div className="reveal-stream">
-              {blueprint  && <BlueprintCard blueprint={blueprint} />}
+              {blueprint  && <BlueprintCard blueprint={blueprint} focusedInsight={focusedInsight} />}
               {imageUrl   && <ImageCard imageUrl={imageUrl} imageSummary={imageSummary} />}
               {alignment  && <AlignmentCard alignment={alignment} />}
               {copyAssets && <CopyCard copyAssets={copyAssets} />}
@@ -551,6 +609,7 @@ export function AdPipelineUI({ onBack }: { onBack?: () => void } = {}) {
             blueprint={blueprint}
             imageSummary={imageSummary}
             alignment={alignment}
+            focusedInsight={focusedInsight}
             onReset={reset}
           />
         )}
