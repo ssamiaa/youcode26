@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useId } from 'react'
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, Legend,
@@ -6,7 +6,28 @@ import {
 import type { PipelineEntry } from '../pipeline/PipelineBoard'
 
 interface AnalyticsUIProps {
+  /** Full combined string, a single clause, or '' — forwarded to the post pipeline as `insightsContext`. */
   onCreateAd?: (context: string) => void
+}
+
+interface OtherInsightOption {
+  id: string
+  title: string
+  clause: string
+}
+
+type InsightModalTab = 'interested' | 'not_converted' | 'other'
+
+const RANDOM_CHOICE = 'random' as const
+
+function clauseInterestedSkill(skill: string, count: number) {
+  const n = count === 1 ? 'volunteer' : 'volunteers'
+  return `Among interested volunteers, ${skill} is a leading skill (${count} interested ${n}).`
+}
+
+function clauseNotConvertedSkill(skill: string, count: number) {
+  const n = count === 1 ? 'volunteer' : 'volunteers'
+  return `Among volunteers who have not yet converted, ${skill} appears often (${count} ${n}).`
 }
 
 const STATUS_COLORS: Record<string, string> = {
@@ -26,6 +47,11 @@ const STATUS_LABELS: Record<string, string> = {
 export default function AnalyticsUI({ onCreateAd }: AnalyticsUIProps) {
   const [entries, setEntries] = useState<PipelineEntry[]>([])
   const [loading, setLoading] = useState(true)
+  const [insightModalOpen, setInsightModalOpen] = useState(false)
+  const [insightModalTab, setInsightModalTab] = useState<InsightModalTab>('interested')
+  const [insightChoice, setInsightChoice] = useState<string>(RANDOM_CHOICE)
+  const insightModalTitleId = useId()
+  const insightModalDescId = useId()
 
   const fetchData = useCallback(async () => {
     setLoading(true)
@@ -42,6 +68,15 @@ export default function AnalyticsUI({ onCreateAd }: AnalyticsUIProps) {
   }, [])
 
   useEffect(() => { fetchData() }, [fetchData])
+
+  useEffect(() => {
+    if (!insightModalOpen) return
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setInsightModalOpen(false)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [insightModalOpen])
 
   // ── Derived stats ──────────────────────────────────────────────────────────
 
@@ -102,19 +137,110 @@ export default function AnalyticsUI({ onCreateAd }: AnalyticsUIProps) {
   entries.filter(e => e.status === 'not_interested').forEach(e => {
     e.skills?.forEach(s => { notInterestedSkills[s] = (notInterestedSkills[s] ?? 0) + 1 })
   })
-  const missedSkills = Object.entries(notInterestedSkills)
+  const missedSkillsRanked = Object.entries(notInterestedSkills)
     .filter(([s]) => !skillCount[s])
     .sort((a, b) => b[1] - a[1])
-    .slice(0, 5)
-    .map(([s]) => s)
+    .slice(0, 8)
+    .map(([skill, count]) => ({ skill, count }))
 
-  // Ad context summary for "Generate Ad" CTA
-  const adContext = [
-    topSkills.length    ? `Top skills from interested volunteers: ${topSkills.slice(0, 3).map(s => s.skill).join(', ')}.` : '',
-    topNeighbourhoods.length ? `Strongest neighbourhoods: ${topNeighbourhoods.slice(0, 3).map(n => n.neighbourhood).join(', ')}.` : '',
-    interestRate > 0    ? `Current interest rate: ${interestRate}%.` : '',
-    missedSkills.length ? `Skills we haven't converted yet: ${missedSkills.join(', ')}.` : '',
-  ].filter(Boolean).join(' ')
+  const missedSkills = missedSkillsRanked.map(m => m.skill)
+
+  const otherInsightOptions: OtherInsightOption[] = []
+  if (topNeighbourhoods.length) {
+    otherInsightOptions.push({
+      id: 'neighbourhoods',
+      title: 'Strongest neighbourhoods',
+      clause: `Strongest neighbourhoods: ${topNeighbourhoods.slice(0, 3).map(n => n.neighbourhood).join(', ')}.`,
+    })
+  }
+  if (interestRate > 0) {
+    otherInsightOptions.push({
+      id: 'interest-rate',
+      title: 'Interest rate',
+      clause: `Current interest rate: ${interestRate}%.`,
+    })
+  }
+
+  const interestedSkillClauses = topSkills.map(s => clauseInterestedSkill(s.skill, s.count))
+  const notConvertedSkillClauses = missedSkillsRanked.map(s => clauseNotConvertedSkill(s.skill, s.count))
+  const otherClauses = otherInsightOptions.map(o => o.clause)
+  const fullRandomContext = [...interestedSkillClauses, ...notConvertedSkillClauses, ...otherClauses].join(' ')
+  const hasAnyInsightPayload = fullRandomContext.trim().length > 0
+
+  function openInsightModal() {
+    setInsightModalOpen(true)
+    if (topSkills.length > 0) {
+      setInsightModalTab('interested')
+      setInsightChoice('int-0')
+    } else if (missedSkillsRanked.length > 0) {
+      setInsightModalTab('not_converted')
+      setInsightChoice('miss-0')
+    } else {
+      setInsightModalTab('other')
+      setInsightChoice(RANDOM_CHOICE)
+    }
+  }
+
+  function setModalTab(tab: InsightModalTab) {
+    setInsightModalTab(tab)
+    if (tab === 'interested' && topSkills.length > 0) setInsightChoice('int-0')
+    else if (tab === 'not_converted' && missedSkillsRanked.length > 0) setInsightChoice('miss-0')
+    else setInsightChoice(RANDOM_CHOICE)
+  }
+
+  function confirmTargetedPost() {
+    if (!onCreateAd) return
+    if (!hasAnyInsightPayload) {
+      onCreateAd('')
+      setInsightModalOpen(false)
+      return
+    }
+    if (insightChoice === RANDOM_CHOICE) {
+      onCreateAd(fullRandomContext)
+      setInsightModalOpen(false)
+      return
+    }
+    const intM = /^int-(\d+)$/.exec(insightChoice)
+    if (intM) {
+      const row = topSkills[Number(intM[1])]
+      onCreateAd(row ? clauseInterestedSkill(row.skill, row.count) : fullRandomContext)
+      setInsightModalOpen(false)
+      return
+    }
+    const missM = /^miss-(\d+)$/.exec(insightChoice)
+    if (missM) {
+      const row = missedSkillsRanked[Number(missM[1])]
+      onCreateAd(row ? clauseNotConvertedSkill(row.skill, row.count) : fullRandomContext)
+      setInsightModalOpen(false)
+      return
+    }
+    const otherM = /^other-(.+)$/.exec(insightChoice)
+    if (otherM) {
+      const opt = otherInsightOptions.find(o => o.id === otherM[1])
+      onCreateAd(opt?.clause ?? fullRandomContext)
+    } else {
+      onCreateAd(fullRandomContext)
+    }
+    setInsightModalOpen(false)
+  }
+
+  const insightSelectionValid =
+    !hasAnyInsightPayload ||
+    (insightModalTab === 'interested' &&
+      topSkills.length > 0 &&
+      (() => {
+        const m = /^int-(\d+)$/.exec(insightChoice)
+        return m != null && topSkills[Number(m[1])] != null
+      })()) ||
+    (insightModalTab === 'not_converted' &&
+      missedSkillsRanked.length > 0 &&
+      (() => {
+        const m = /^miss-(\d+)$/.exec(insightChoice)
+        return m != null && missedSkillsRanked[Number(m[1])] != null
+      })()) ||
+    (insightModalTab === 'other' &&
+      (insightChoice === RANDOM_CHOICE ||
+        otherInsightOptions.some(o => insightChoice === `other-${o.id}`)))
 
   if (loading) {
     return (
@@ -260,7 +386,8 @@ export default function AnalyticsUI({ onCreateAd }: AnalyticsUIProps) {
 
         {onCreateAd && (
           <button
-            onClick={() => onCreateAd(adContext)}
+            type="button"
+            onClick={openInsightModal}
             className="mt-2 flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#0070E0] text-white text-xs font-semibold
                        hover:bg-[#5DADE2] transition-colors duration-150
                        focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0070E0]"
@@ -272,6 +399,211 @@ export default function AnalyticsUI({ onCreateAd }: AnalyticsUIProps) {
           </button>
         )}
       </div>
+
+      {insightModalOpen && onCreateAd && (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50"
+          role="presentation"
+          onClick={() => setInsightModalOpen(false)}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby={insightModalTitleId}
+            aria-describedby={insightModalDescId}
+            className="w-full max-w-lg rounded-2xl border border-[#A9CEE8] bg-[#1A3A52] shadow-xl p-5 space-y-4"
+            onClick={e => e.stopPropagation()}
+          >
+            <h4 id={insightModalTitleId} className="text-sm font-bold text-white">
+              Target an insight
+            </h4>
+            <p id={insightModalDescId} className="text-xs text-[#8B9DB5] leading-relaxed">
+              Pick a skill to anchor the post, or use the Other tab for neighbourhoods, interest rate, or a random focus across all analytics lines.
+            </p>
+
+            {!hasAnyInsightPayload ? (
+              <p className="text-xs text-[#A9CEE8]">
+                No structured insight snippets are available yet. You can still open the post generator and run it without an analytics anchor.
+              </p>
+            ) : (
+              <>
+                <div
+                  role="tablist"
+                  aria-label="Insight category"
+                  className="flex flex-wrap gap-1.5 p-1 rounded-xl bg-[#002855]/80 border border-[#4A7BA7]"
+                >
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={insightModalTab === 'interested'}
+                    disabled={topSkills.length === 0}
+                    onClick={() => setModalTab('interested')}
+                    className={`flex-1 min-w-[6.5rem] px-2 py-2 rounded-lg text-xs font-semibold transition-colors
+                      ${insightModalTab === 'interested' ? 'bg-[#0070E0] text-white' : 'text-[#A9CEE8] hover:bg-[#1A3A52]'}
+                      disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent`}
+                  >
+                    Interested skills
+                  </button>
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={insightModalTab === 'not_converted'}
+                    disabled={missedSkillsRanked.length === 0}
+                    onClick={() => setModalTab('not_converted')}
+                    className={`flex-1 min-w-[6.5rem] px-2 py-2 rounded-lg text-xs font-semibold transition-colors
+                      ${insightModalTab === 'not_converted' ? 'bg-[#0070E0] text-white' : 'text-[#A9CEE8] hover:bg-[#1A3A52]'}
+                      disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent`}
+                  >
+                    Not converted
+                  </button>
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={insightModalTab === 'other'}
+                    onClick={() => setModalTab('other')}
+                    className={`flex-1 min-w-[5rem] px-2 py-2 rounded-lg text-xs font-semibold transition-colors
+                      ${insightModalTab === 'other' ? 'bg-[#0070E0] text-white' : 'text-[#A9CEE8] hover:bg-[#1A3A52]'}`}
+                  >
+                    Other
+                  </button>
+                </div>
+
+                <div
+                  className="max-h-[min(280px,42vh)] overflow-y-auto pr-1 space-y-2"
+                  role="tabpanel"
+                >
+                  {insightModalTab === 'interested' && (
+                    topSkills.length === 0 ? (
+                      <p className="text-xs text-[#8B9DB5] py-2">No skill data from interested volunteers yet.</p>
+                    ) : (
+                      <fieldset className="space-y-2 border-0 p-0 m-0">
+                        <legend className="sr-only">Skill among interested volunteers</legend>
+                        {topSkills.map((row, i) => (
+                          <label
+                            key={row.skill}
+                            className="flex gap-3 items-start rounded-xl border border-[#4A7BA7] bg-[#002855]/60 px-3 py-2.5 cursor-pointer hover:border-[#0070E0] has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-[#0070E0]"
+                          >
+                            <input
+                              type="radio"
+                              name="insight-pick"
+                              className="mt-0.5"
+                              checked={insightChoice === `int-${i}`}
+                              onChange={() => setInsightChoice(`int-${i}`)}
+                            />
+                            <span>
+                              <span className="block text-xs font-semibold text-white">{row.skill}</span>
+                              <span className="block text-[11px] text-[#8B9DB5] mt-0.5">
+                                {row.count} interested volunteer{row.count !== 1 ? 's' : ''}
+                              </span>
+                              <span className="block text-[11px] text-[#4A7BA7] mt-1 leading-snug">
+                                {clauseInterestedSkill(row.skill, row.count)}
+                              </span>
+                            </span>
+                          </label>
+                        ))}
+                      </fieldset>
+                    )
+                  )}
+
+                  {insightModalTab === 'not_converted' && (
+                    missedSkillsRanked.length === 0 ? (
+                      <p className="text-xs text-[#8B9DB5] py-2">
+                        No &ldquo;not yet converted&rdquo; skill patterns yet, or all declining volunteers overlap with interested skills.
+                      </p>
+                    ) : (
+                      <fieldset className="space-y-2 border-0 p-0 m-0">
+                        <legend className="sr-only">Skill among volunteers not yet converted</legend>
+                        {missedSkillsRanked.map((row, i) => (
+                          <label
+                            key={row.skill}
+                            className="flex gap-3 items-start rounded-xl border border-[#4A7BA7] bg-[#002855]/60 px-3 py-2.5 cursor-pointer hover:border-[#0070E0] has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-[#0070E0]"
+                          >
+                            <input
+                              type="radio"
+                              name="insight-pick"
+                              className="mt-0.5"
+                              checked={insightChoice === `miss-${i}`}
+                              onChange={() => setInsightChoice(`miss-${i}`)}
+                            />
+                            <span>
+                              <span className="block text-xs font-semibold text-white">{row.skill}</span>
+                              <span className="block text-[11px] text-[#8B9DB5] mt-0.5">
+                                {row.count} not-yet-converted volunteer{row.count !== 1 ? 's' : ''}
+                              </span>
+                              <span className="block text-[11px] text-[#4A7BA7] mt-1 leading-snug">
+                                {clauseNotConvertedSkill(row.skill, row.count)}
+                              </span>
+                            </span>
+                          </label>
+                        ))}
+                      </fieldset>
+                    )
+                  )}
+
+                  {insightModalTab === 'other' && (
+                    <fieldset className="space-y-2 border-0 p-0 m-0">
+                      <legend className="sr-only">Other analytics anchors</legend>
+                      <label className="flex gap-3 items-start rounded-xl border border-[#4A7BA7] bg-[#002855]/60 px-3 py-2.5 cursor-pointer hover:border-[#0070E0] has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-[#0070E0]">
+                        <input
+                          type="radio"
+                          name="insight-pick"
+                          className="mt-0.5"
+                          checked={insightChoice === RANDOM_CHOICE}
+                          onChange={() => setInsightChoice(RANDOM_CHOICE)}
+                        />
+                        <span>
+                          <span className="block text-xs font-semibold text-white">Pick one for me</span>
+                          <span className="block text-[11px] text-[#8B9DB5] mt-0.5">
+                            Randomly chooses one line from every skill, neighbourhood, and rate insight above.
+                          </span>
+                        </span>
+                      </label>
+                      {otherInsightOptions.map(opt => (
+                        <label
+                          key={opt.id}
+                          className="flex gap-3 items-start rounded-xl border border-[#4A7BA7] bg-[#002855]/60 px-3 py-2.5 cursor-pointer hover:border-[#0070E0] has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-[#0070E0]"
+                        >
+                          <input
+                            type="radio"
+                            name="insight-pick"
+                            className="mt-0.5"
+                            checked={insightChoice === `other-${opt.id}`}
+                            onChange={() => setInsightChoice(`other-${opt.id}`)}
+                          />
+                          <span>
+                            <span className="block text-xs font-semibold text-white">{opt.title}</span>
+                            <span className="block text-[11px] text-[#A9CEE8] mt-0.5 leading-snug">{opt.clause}</span>
+                          </span>
+                        </label>
+                      ))}
+                    </fieldset>
+                  )}
+                </div>
+              </>
+            )}
+
+            <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 pt-1">
+              <button
+                type="button"
+                onClick={() => setInsightModalOpen(false)}
+                className="px-4 py-2 rounded-xl text-xs font-semibold text-[#A9CEE8] border border-[#4A7BA7] hover:bg-[#002855] transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={confirmTargetedPost}
+                disabled={hasAnyInsightPayload && !insightSelectionValid}
+                className="px-4 py-2 rounded-xl text-xs font-semibold text-white bg-[#0070E0] hover:bg-[#5DADE2] transition-colors
+                           focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0070E0]
+                           disabled:opacity-45 disabled:cursor-not-allowed"
+              >
+                {!hasAnyInsightPayload ? 'Open post generator' : 'Continue'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   )

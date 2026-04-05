@@ -109,9 +109,12 @@ const SCRIM_LABELS: Record<ScrimStyle, string> = {
 function PipelineProgress({
   step,
   stepMessage,
+  focusedInsight,
 }: {
   step: PipelineStep;
   stepMessage: string;
+  /** Set for analytics-anchored runs — shown for every step while the pipeline runs. */
+  focusedInsight?: string | null;
 }) {
   const currentOrdinal = getStepOrdinal(step);
 
@@ -150,6 +153,13 @@ function PipelineProgress({
           );
         })}
       </div>
+
+      {focusedInsight?.trim() && (
+        <div className="processing-insight-anchor" aria-live="polite">
+          <span className="processing-insight-label">Targeting insight</span>
+          <p className="processing-insight-text">"{focusedInsight.trim()}"</p>
+        </div>
+      )}
 
       <p className="stage-message">{stepMessage}</p>
     </div>
@@ -1056,7 +1066,7 @@ export function AdPipelineUI({
         {/* ── Processing ── */}
         {isProcessing && (
           <div className="processing-view">
-            <PipelineProgress step={step} stepMessage={stepMessage} />
+            <PipelineProgress step={step} stepMessage={stepMessage} focusedInsight={focusedInsight} />
             <div className="reveal-stream">
               {blueprint  && <BlueprintCard blueprint={blueprint} focusedInsight={focusedInsight} />}
               {imageUrl   && <ImageCard imageUrl={imageUrl} imageSummary={imageSummary} />}

@@ -333,14 +333,53 @@ const AUDIENCE_KEYWORDS: Array<[RegExp, string]> = [
   [/\b(low.income|poverty|underserved|marginalised|marginalized)\b/i,      'low-income individuals'],
 ];
 
+/**
+ * Map analytics anchor clauses (from AnalyticsUI) to a concrete target audience phrase
+ * so the Architect writes for people who "match" the insight (e.g. skill → people with that skill).
+ */
+function audienceFromFocusedInsight(insight: string): string | null {
+  const t = insight.trim();
+  if (!t) return null;
+
+  const withSkillPhrase = (raw: string): string => {
+    const name = raw.trim();
+    if (!name) return 'people reflected in your outreach data';
+    const phrase = /\bskills?\b/i.test(name) ? name : `${name} skills`;
+    return `people with ${phrase}`;
+  };
+
+  const interested = /^Among interested volunteers,\s*(.+?)\s+is a leading skill\b/i.exec(t);
+  if (interested) return withSkillPhrase(interested[1]);
+
+  const notConverted =
+    /^Among volunteers who have not yet converted,\s*(.+?)\s+appears often\b/i.exec(t);
+  if (notConverted) return withSkillPhrase(notConverted[1]);
+
+  const nbr = /^Strongest neighbourhoods:\s*(.+?)(?:\.|$)/i.exec(t);
+  if (nbr) {
+    const list = nbr[1].trim().replace(/\.$/, '');
+    return list ? `people in or near ${list}` : null;
+  }
+
+  const rate = /^Current interest rate:\s*(\d+)\s*%/i.exec(t);
+  if (rate) {
+    return `people engaging with your outreach (interest rate ${rate[1]}% in your pipeline)`;
+  }
+
+  return null;
+}
+
 function pickTargetAudience(focusedInsight: string | null): string {
+  if (focusedInsight?.trim()) {
+    const derived = audienceFromFocusedInsight(focusedInsight);
+    if (derived) return derived;
+  }
+
   const pool: string[] = [...BASE_AUDIENCES];
 
   if (focusedInsight) {
     for (const [pattern, label] of AUDIENCE_KEYWORDS) {
       if (pattern.test(focusedInsight) && !pool.includes(label)) {
-        // Prepend so insight-derived groups are weighted more heavily
-        // (they appear once extra, doubling their chance when pool is small).
         pool.unshift(label);
       }
     }
@@ -407,6 +446,8 @@ async function runArchitect(
     'Legacy-Maker':     'those haunted by what they\'ll leave behind — for their children, their city, or history.',
   };
 
+  const missionText = input.mission?.trim() ?? '';
+
   const system = `You are an award-winning non-profit campaign strategist. Find the single sharpest, most emotionally resonant angle — the insight that makes someone stop mid-scroll.
 
 The archetype and target audience have been pre-selected. Your job is to craft the idea, feeling, and image query that best serves them.
@@ -420,12 +461,30 @@ Rules:
 - "targetAudience" = The target demographic has been pre-selected as: "${targetAudience}". Write 1–2 sentences describing how this specific group connects to the org's mission. Do NOT change the group.
 - "pexelsQuery" = 3–5 words describing what the camera LITERALLY sees. Cinematic. A decisive moment. No abstractions, no metaphors.${focusedInsight ? `
 
-A single outreach data point anchors this entire campaign. Let it exclusively determine the core idea. Do not draw on any other information.` : ''}
+Outreach-anchored campaign (you receive the organization's mission and one anchor insight below):
+- The anchor insight is the proof point and specificity — the post must clearly spring from that data.
+- The organization's mission is your narrative backbone: interpret the insight through what this organization exists to do. The "idea" must weave insight and mission together so the reader feels why this stat or pattern matters for this org's purpose — not a generic nonprofit line anyone could run.
+- If mission text is missing or thin, infer a concise, credible purpose from the org name, sector, and location, then still forge that bridge.` : ''}
 RESPOND WITH VALID JSON ONLY.`;
 
-  const user = `Blueprint for: ${input.orgName} | ${input.sector} | ${input.location}
-Mission: ${input.mission}
-${focusedInsight ? `\nAnchor insight (build the entire campaign around this one data point):\n"${focusedInsight}"\n` : ''}
+  const user = focusedInsight
+    ? `Blueprint for: ${input.orgName} | ${input.sector} | ${input.location}
+
+Organization mission (use this to frame why the anchor insight matters — tie the campaign idea to this purpose):
+${missionText || '(Not on file — infer a short, credible mission from the org name, sector, and location above, then connect the insight to that inferred purpose.)'}
+
+Anchor insight — center the campaign on this outreach finding; it must read as evidence in service of the mission:
+"${focusedInsight}"
+
+{
+  "idea": "one provocative sentence that bridges the anchor insight and the organization's mission",
+  "feeling": "visceral 2–3 word compound emotion",
+  "targetAudience": "1–2 sentences — must be about ${targetAudience}",
+  "archetype": "${archetype}",
+  "pexelsQuery": "3–5 word cinematic literal photo description"
+}`
+    : `Blueprint for: ${input.orgName} | ${input.sector} | ${input.location}
+Mission: ${missionText || '(unspecified)'}
 {
   "idea": "one provocative, specific sentence — the counterintuitive truth",
   "feeling": "visceral 2–3 word compound emotion",
