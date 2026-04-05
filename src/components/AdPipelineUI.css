@@ -460,6 +460,37 @@
   text-align: center;
 }
 
+/* Insight anchor — visible for all processing steps (before blueprint card appears) */
+.processing-insight-anchor {
+  width: 100%;
+  max-width: 520px;
+  margin: 0 auto;
+  padding: 12px 16px;
+  border-radius: 10px;
+  border: 1px solid rgba(0, 112, 224, 0.28);
+  background: rgba(0, 112, 224, 0.09);
+  text-align: center;
+}
+
+.processing-insight-label {
+  display: block;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #5DADE2;
+  margin-bottom: 6px;
+}
+
+.processing-insight-text {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  font-style: italic;
+  color: var(--text-primary);
+  word-break: break-word;
+}
+
 /* ─── Progressive Reveal Stream ──────────────────────────────────────────────── */
 .reveal-stream {
   display: flex;
