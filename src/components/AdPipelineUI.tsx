@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { useAdPipeline } from '../hooks/useAdPipeline';
+import { useAdPipeline, buildCloudinaryUrl } from '../hooks/useAdPipeline';
 import type { AdInput, PipelineStep, AdArchetype, PostBlueprint, AlignmentResult, CopyAssets, ScrimStyle } from '../hooks/useAdPipeline';
 import { supabase } from '../lib/supabaseClient';
 import './AdPipelineUI.css';
@@ -14,9 +14,14 @@ interface SavedAd {
   timestamp: number;
   cloudinaryUrl: string;
   headline: string;
+  body: string;
   cta: string;
   archetype: AdArchetype;
   orgName: string;
+  /** Stored so we can rebuild the Cloudinary URL after text edits. */
+  imageUrl?: string;
+  copyAssets?: CopyAssets;
+  orgContact?: string;
 }
 
 function loadGallery(): SavedAd[] {
@@ -263,13 +268,52 @@ interface AdResultProps {
   imageSummary: string;
   alignment: AlignmentResult;
   focusedInsight?: string | null;
+  orgInput: AdInput;
   onReset: () => void;
 }
 
-function AdResult({ cloudinaryUrl, imageUrl, copyAssets, blueprint, imageSummary, alignment, focusedInsight, onReset }: AdResultProps) {
-  const [imgLoaded, setImgLoaded] = useState(false);
-  const [imgError, setImgError]   = useState(false);
+function AdResult({ cloudinaryUrl, imageUrl, copyAssets, blueprint, imageSummary, alignment, focusedInsight, orgInput, onReset }: AdResultProps) {
+  const [imgLoaded, setImgLoaded]   = useState(false);
+  const [imgError, setImgError]     = useState(false);
+  const [editing, setEditing]       = useState(false);
+  const [rebuilding, setRebuilding] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState(cloudinaryUrl);
+
+  // Draft text state — initialised from copyAssets
+  const [draftHeadline, setDraftHeadline] = useState(copyAssets.headline);
+  const [draftBody,     setDraftBody]     = useState(copyAssets.body);
+  const [draftCta,      setDraftCta]      = useState(copyAssets.cta);
+
+  // Track the copyAssets in use so the preview image matches downloads
+  const [activeCopy, setActiveCopy] = useState<CopyAssets>(copyAssets);
+
   const archetypeMeta = ARCHETYPE_META[blueprint.archetype];
+
+  function handleEditToggle() {
+    if (!editing) {
+      setDraftHeadline(activeCopy.headline);
+      setDraftBody(activeCopy.body);
+      setDraftCta(activeCopy.cta);
+    }
+    setEditing(e => !e);
+  }
+
+  function handleApply() {
+    const updated: CopyAssets = {
+      ...activeCopy,
+      headline: draftHeadline.trim() || activeCopy.headline,
+      body:     draftBody.trim()     || activeCopy.body,
+      cta:      draftCta.trim()      || activeCopy.cta,
+    };
+    setRebuilding(true);
+    setImgLoaded(false);
+    setImgError(false);
+    const newUrl = buildCloudinaryUrl(updated, orgInput, imageUrl);
+    setActiveCopy(updated);
+    setPreviewUrl(newUrl);
+    setEditing(false);
+    setRebuilding(false);
+  }
 
   return (
     <div className="ad-result">
@@ -296,29 +340,34 @@ function AdResult({ cloudinaryUrl, imageUrl, copyAssets, blueprint, imageSummary
               Targeted Insight
             </div>
           )}
-          <div className="placement-pill">{SCRIM_LABELS[copyAssets.builderSpec.scrimStyle]}</div>
+          <div className="placement-pill">{SCRIM_LABELS[activeCopy.builderSpec.scrimStyle]}</div>
         </div>
       </div>
 
       {/* Main grid: ad preview + copy metadata */}
       <div className="result-grid">
         <div className="ad-preview-card">
-          <div className="preview-label">Cloudinary Render</div>
-          {!imgLoaded && !imgError && (
+          <div className="preview-label">
+            Cloudinary Render
+            {previewUrl !== cloudinaryUrl && (
+              <span className="preview-edited-badge">edited</span>
+            )}
+          </div>
+          {(rebuilding || (!imgLoaded && !imgError)) && (
             <div className="img-skeleton">
               <div className="skeleton-shimmer" />
-              <span>Rendering ad...</span>
+              <span>{rebuilding ? 'Rebuilding…' : 'Rendering ad...'}</span>
             </div>
           )}
           {imgError ? (
             <div className="img-error">
               <p>Preview unavailable</p>
-              <a href={cloudinaryUrl} target="_blank" rel="noopener noreferrer">Open URL</a>
+              <a href={previewUrl} target="_blank" rel="noopener noreferrer">Open URL</a>
             </div>
           ) : (
             <img
-              src={cloudinaryUrl}
-              alt={copyAssets.headline}
+              src={previewUrl}
+              alt={activeCopy.headline}
               className={imgLoaded ? 'loaded' : 'loading'}
               onLoad={() => setImgLoaded(true)}
               onError={() => setImgError(true)}
@@ -328,26 +377,93 @@ function AdResult({ cloudinaryUrl, imageUrl, copyAssets, blueprint, imageSummary
 
         <div className="ad-meta">
           <section className="meta-section">
-            <h3>Ad Copy</h3>
-            <div className="copy-block">
-              <div className="copy-label">Headline</div>
-              <p className="headline-text">{copyAssets.headline}</p>
+            <div className="meta-section-header">
+              <h3>Ad Copy</h3>
+              <button
+                className={`btn-edit-text${editing ? ' btn-edit-text--active' : ''}`}
+                onClick={handleEditToggle}
+              >
+                {editing ? (
+                  <>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+                    </svg>
+                    Cancel
+                  </>
+                ) : (
+                  <>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                    </svg>
+                    Edit Text
+                  </>
+                )}
+              </button>
             </div>
-            <div className="copy-block">
-              <div className="copy-label">Body</div>
-              <p className="body-text">{copyAssets.body}</p>
-            </div>
-            <div className="copy-block">
-              <div className="copy-label">CTA</div>
-              <p className="body-text">{copyAssets.cta}</p>
-            </div>
+
+            {editing ? (
+              <div className="ad-text-editor">
+                <label className="edit-field">
+                  <span className="edit-field-label">Headline</span>
+                  <input
+                    className="edit-input"
+                    value={draftHeadline}
+                    onChange={e => setDraftHeadline(e.target.value)}
+                    placeholder="Headline (≤5 words)"
+                  />
+                </label>
+                <label className="edit-field">
+                  <span className="edit-field-label">Body</span>
+                  <textarea
+                    className="edit-textarea"
+                    value={draftBody}
+                    onChange={e => setDraftBody(e.target.value)}
+                    rows={3}
+                    placeholder="2–3 sentences"
+                  />
+                </label>
+                <label className="edit-field">
+                  <span className="edit-field-label">CTA</span>
+                  <input
+                    className="edit-input"
+                    value={draftCta}
+                    onChange={e => setDraftCta(e.target.value)}
+                    placeholder="3–6 word call-to-action"
+                  />
+                </label>
+                <div className="edit-actions">
+                  <button className="btn-apply-edit" onClick={handleApply}>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                      <polyline points="20 6 9 17 4 12" />
+                    </svg>
+                    Apply &amp; Rebuild
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <>
+                <div className="copy-block">
+                  <div className="copy-label">Headline</div>
+                  <p className="headline-text">{activeCopy.headline}</p>
+                </div>
+                <div className="copy-block">
+                  <div className="copy-label">Body</div>
+                  <p className="body-text">{activeCopy.body}</p>
+                </div>
+                <div className="copy-block">
+                  <div className="copy-label">CTA</div>
+                  <p className="body-text">{activeCopy.cta}</p>
+                </div>
+              </>
+            )}
             <div className="copy-block">
               <div className="copy-label">Layout</div>
               <p className="body-text">
-                Style: <strong>{SCRIM_LABELS[copyAssets.builderSpec.scrimStyle]}</strong> ·
-                Scrim: <strong>{copyAssets.builderSpec.scrimOpacity}%</strong> ·
-                Layers: <strong>{copyAssets.builderSpec.layers.length}</strong> ·
-                Colour: <code className="query-text">#{copyAssets.builderSpec.scrimColorHex}</code>
+                Style: <strong>{SCRIM_LABELS[activeCopy.builderSpec.scrimStyle]}</strong> ·
+                Scrim: <strong>{activeCopy.builderSpec.scrimOpacity}%</strong> ·
+                Layers: <strong>{activeCopy.builderSpec.layers.length}</strong> ·
+                Colour: <code className="query-text">#{activeCopy.builderSpec.scrimColorHex}</code>
               </p>
             </div>
           </section>
@@ -362,7 +478,7 @@ function AdResult({ cloudinaryUrl, imageUrl, copyAssets, blueprint, imageSummary
               </svg>
               Source Image (Pexels)
             </a>
-            <a href={cloudinaryUrl} target="_blank" rel="noopener noreferrer" className="url-link">
+            <a href={previewUrl} target="_blank" rel="noopener noreferrer" className="url-link">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z" />
               </svg>
@@ -460,7 +576,7 @@ function AdResult({ cloudinaryUrl, imageUrl, copyAssets, blueprint, imageSummary
       <div className="result-actions">
         <button
           className="btn-download"
-          onClick={() => downloadAd(cloudinaryUrl, copyAssets.headline)}
+          onClick={() => downloadAd(previewUrl, activeCopy.headline)}
         >
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
@@ -484,7 +600,144 @@ function AdResult({ cloudinaryUrl, imageUrl, copyAssets, blueprint, imageSummary
 
 // ─── Gallery Components ───────────────────────────────────────────────────────
 
-function GalleryCard({ ad, onRemove }: { ad: SavedAd; onRemove: (id: string) => void }) {
+interface EditModalProps {
+  ad: SavedAd;
+  onClose: () => void;
+  onSave: (id: string, updates: { cloudinaryUrl: string; headline: string; body: string; cta: string }) => void;
+}
+
+function EditModal({ ad, onClose, onSave }: EditModalProps) {
+  const [draftHeadline, setDraftHeadline] = useState(ad.headline);
+  const [draftBody,     setDraftBody]     = useState(ad.body ?? '');
+  const [draftCta,      setDraftCta]      = useState(ad.cta);
+  const [previewUrl,    setPreviewUrl]    = useState(ad.cloudinaryUrl);
+  const [imgLoaded,     setImgLoaded]     = useState(false);
+  const [rebuilding,    setRebuilding]    = useState(false);
+
+  const canRebuild = !!(ad.copyAssets && ad.imageUrl);
+
+  function handleApply() {
+    if (!ad.copyAssets || !ad.imageUrl) return;
+    const updated: CopyAssets = {
+      ...ad.copyAssets,
+      headline: draftHeadline.trim() || ad.headline,
+      body:     draftBody.trim()     || (ad.body ?? ''),
+      cta:      draftCta.trim()      || ad.cta,
+    };
+    setRebuilding(true);
+    setImgLoaded(false);
+    const minInput: AdInput = {
+      orgName:  ad.orgName,
+      contact:  ad.orgContact ?? ad.orgName,
+      sector:   '',
+      mission:  '',
+      location: '',
+    };
+    setPreviewUrl(buildCloudinaryUrl(updated, minInput, ad.imageUrl));
+    setRebuilding(false);
+  }
+
+  function handleSave() {
+    onSave(ad.id, {
+      cloudinaryUrl: previewUrl,
+      headline:      draftHeadline.trim() || ad.headline,
+      body:          draftBody.trim()     || (ad.body ?? ''),
+      cta:           draftCta.trim()      || ad.cta,
+    });
+    onClose();
+  }
+
+  return (
+    <div className="edit-modal-overlay" onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
+      <div className="edit-modal">
+        <div className="edit-modal-header">
+          <h3>Edit Ad</h3>
+          <button className="edit-modal-close" onClick={onClose} aria-label="Close">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+          </button>
+        </div>
+
+        <div className="edit-modal-body">
+          <div className="edit-modal-preview">
+            {(rebuilding || !imgLoaded) && (
+              <div className="img-skeleton edit-modal-skeleton">
+                <div className="skeleton-shimmer" />
+                <span>{rebuilding ? 'Rebuilding…' : 'Loading…'}</span>
+              </div>
+            )}
+            <img
+              src={previewUrl}
+              alt={draftHeadline}
+              className={`edit-modal-img${imgLoaded ? ' loaded' : ''}`}
+              onLoad={() => setImgLoaded(true)}
+            />
+          </div>
+
+          <div className="edit-modal-fields">
+            <label className="edit-field">
+              <span className="edit-field-label">Headline</span>
+              <input
+                className="edit-input"
+                value={draftHeadline}
+                onChange={e => setDraftHeadline(e.target.value)}
+                placeholder="Headline (≤5 words)"
+              />
+            </label>
+            <label className="edit-field">
+              <span className="edit-field-label">Body</span>
+              <textarea
+                className="edit-textarea"
+                value={draftBody}
+                onChange={e => setDraftBody(e.target.value)}
+                rows={3}
+                placeholder="2–3 sentences"
+              />
+            </label>
+            <label className="edit-field">
+              <span className="edit-field-label">CTA</span>
+              <input
+                className="edit-input"
+                value={draftCta}
+                onChange={e => setDraftCta(e.target.value)}
+                placeholder="3–6 word call-to-action"
+              />
+            </label>
+
+            {canRebuild && (
+              <button className="btn-apply-edit" onClick={handleApply}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <polyline points="1 4 1 10 7 10" />
+                  <path d="M3.51 15a9 9 0 1 0 .49-4.95" />
+                </svg>
+                Preview Changes
+              </button>
+            )}
+
+            <div className="edit-modal-footer-actions">
+              <button className="btn-apply-edit btn-apply-edit--save" onClick={handleSave}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                  <polyline points="20 6 9 17 4 12" />
+                </svg>
+                Save to Gallery
+              </button>
+              <button className="gallery-card-action-btn" onClick={() => downloadAd(previewUrl, draftHeadline || ad.headline)} title="Download">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                  <polyline points="7 10 12 15 17 10" />
+                  <line x1="12" y1="15" x2="12" y2="3" />
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function GalleryCard({ ad, onRemove, onEdit }: { ad: SavedAd; onRemove: (id: string) => void; onEdit: (id: string) => void }) {
   const [loaded, setLoaded] = useState(false);
   const meta = ARCHETYPE_META[ad.archetype];
   return (
@@ -503,6 +756,7 @@ function GalleryCard({ ad, onRemove }: { ad: SavedAd; onRemove: (id: string) => 
       </a>
       <div className="gallery-card-meta">
         <p className="gallery-card-headline">{ad.headline}</p>
+        <span className="gallery-card-time">{formatTimeAgo(ad.timestamp)}</span>
         <div className="gallery-card-footer">
           <span
             className="gallery-card-archetype"
@@ -511,7 +765,16 @@ function GalleryCard({ ad, onRemove }: { ad: SavedAd; onRemove: (id: string) => 
             {meta.icon} {ad.archetype}
           </span>
           <div className="gallery-card-actions">
-            <span className="gallery-card-time">{formatTimeAgo(ad.timestamp)}</span>
+            <button
+              className="gallery-card-action-btn"
+              onClick={() => onEdit(ad.id)}
+              title="Edit text"
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+              </svg>
+            </button>
             <button
               className="gallery-card-action-btn"
               onClick={() => downloadAd(ad.cloudinaryUrl, ad.headline)}
@@ -539,7 +802,18 @@ function GalleryCard({ ad, onRemove }: { ad: SavedAd; onRemove: (id: string) => 
   );
 }
 
-function AdGallery({ gallery, onRemove }: { gallery: SavedAd[]; onRemove: (id: string) => void }) {
+function AdGallery({
+  gallery,
+  onRemove,
+  onUpdate,
+}: {
+  gallery: SavedAd[];
+  onRemove: (id: string) => void;
+  onUpdate: (id: string, updates: { cloudinaryUrl: string; headline: string; body: string; cta: string }) => void;
+}) {
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const editingAd = editingId ? gallery.find(a => a.id === editingId) ?? null : null;
+
   if (gallery.length === 0) return null;
   return (
     <section className="ad-gallery">
@@ -555,8 +829,22 @@ function AdGallery({ gallery, onRemove }: { gallery: SavedAd[]; onRemove: (id: s
         <span className="gallery-count">{gallery.length} / {GALLERY_MAX}</span>
       </div>
       <div className="gallery-grid">
-        {gallery.map(ad => <GalleryCard key={ad.id} ad={ad} onRemove={onRemove} />)}
+        {gallery.map(ad => (
+          <GalleryCard
+            key={ad.id}
+            ad={ad}
+            onRemove={onRemove}
+            onEdit={id => setEditingId(id)}
+          />
+        ))}
       </div>
+      {editingAd && (
+        <EditModal
+          ad={editingAd}
+          onClose={() => setEditingId(null)}
+          onSave={(id, updates) => { onUpdate(id, updates); setEditingId(null); }}
+        />
+      )}
     </section>
   );
 }
@@ -600,9 +888,13 @@ export function AdPipelineUI({ insightsContext, onInsightsConsumed }: {
       timestamp: Date.now(),
       cloudinaryUrl,
       headline: copyAssets.headline,
+      body: copyAssets.body,
       cta: copyAssets.cta,
       archetype: blueprint.archetype,
       orgName: orgInput?.orgName ?? '',
+      imageUrl: imageUrl ?? undefined,
+      copyAssets,
+      orgContact: orgInput?.contact ?? '',
     };
     setGallery(prev => {
       const updated = [entry, ...prev].slice(0, GALLERY_MAX);
@@ -614,6 +906,14 @@ export function AdPipelineUI({ insightsContext, onInsightsConsumed }: {
   function handleRemove(id: string) {
     setGallery(prev => {
       const updated = prev.filter(a => a.id !== id);
+      persistGallery(updated);
+      return updated;
+    });
+  }
+
+  function handleUpdate(id: string, updates: { cloudinaryUrl: string; headline: string; body: string; cta: string }) {
+    setGallery(prev => {
+      const updated = prev.map(a => a.id === id ? { ...a, ...updates } : a);
       persistGallery(updated);
       return updated;
     });
@@ -761,7 +1061,7 @@ export function AdPipelineUI({ insightsContext, onInsightsConsumed }: {
         )}
 
         {/* ── Done ── */}
-        {step === 'done' && cloudinaryUrl && copyAssets && blueprint && imageUrl && imageSummary && alignment && (
+        {step === 'done' && cloudinaryUrl && copyAssets && blueprint && imageUrl && imageSummary && alignment && orgInput && (
           <AdResult
             cloudinaryUrl={cloudinaryUrl}
             imageUrl={imageUrl}
@@ -770,6 +1070,7 @@ export function AdPipelineUI({ insightsContext, onInsightsConsumed }: {
             imageSummary={imageSummary}
             alignment={alignment}
             focusedInsight={focusedInsight}
+            orgInput={orgInput}
             onReset={handleRegenerate}
           />
         )}
@@ -791,7 +1092,7 @@ export function AdPipelineUI({ insightsContext, onInsightsConsumed }: {
         )}
       </main>
 
-      <AdGallery gallery={gallery} onRemove={handleRemove} />
+      <AdGallery gallery={gallery} onRemove={handleRemove} onUpdate={handleUpdate} />
     </div>
   );
 }
