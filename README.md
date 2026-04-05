@@ -1,5 +1,3 @@
-This already looks great! Here's a slightly improved version with better spacing and a tech stack section added:
-
 ```
 # Relinkd
 
