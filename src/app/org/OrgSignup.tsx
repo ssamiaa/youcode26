@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from 'react'
+import { supabase } from '../../lib/supabaseClient'
 
 export interface OrgSignupData {
   BN: string
@@ -63,6 +64,20 @@ export default function OrgSignup({ onSubmit }: OrgSignupProps) {
     setStatus('submitting')
     setErrorMsg('')
     try {
+      if (!supabase) throw new Error('Supabase not configured.')
+      const { error } = await supabase.from('organizers').insert({
+        bn: form.BN,
+        legal_name: form.legal_name,
+        account_name: form.account_name,
+        address1: form.address1,
+        address2: form.address2 || null,
+        city: form.city,
+        province: form.province,
+        postal_code: form.postal_code,
+        country: form.country,
+        sector: form.sector,
+      })
+      if (error) throw new Error(error.message)
       await onSubmit?.(form)
       setStatus('success')
     } catch (err) {
@@ -104,9 +119,9 @@ export default function OrgSignup({ onSubmit }: OrgSignupProps) {
         <div className="w-full max-w-lg">
           <div className="border border-gray-200 rounded-2xl shadow-sm overflow-hidden">
             {/* Card header */}
-            <div className="px-6 py-5 border-b border-gray-100">
-              <h1 className="text-base font-semibold !text-black">Register your organization</h1>
-              <p className="text-xs text-gray-400 mt-0.5">Connect with volunteers in your community.</p>
+            <div className="px-6 py-6 border-b border-gray-100">
+              <h1 className="text-3xl font-bold !text-black">Register your organization</h1>
+              <p className="text-sm text-gray-400 mt-1.5">Connect with volunteers in your community.</p>
             </div>
 
             {/* Card body */}
