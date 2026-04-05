@@ -36,7 +36,6 @@ export default function OrgDashboard() {
   const [connectedIds, setConnectedIds] = useState<Set<string>>(new Set())
 
   const [adContext, setAdContext] = useState<string>('')
-  void adContext
 
   function handleNewChat() {
     setChatKey(k => k + 1)
@@ -51,8 +50,8 @@ export default function OrgDashboard() {
     setPipelineRefreshKey(k => k + 1)
   }
 
-  const handleCreateAdFromAnalytics = (_context: string) => {
-    setAdContext(_context)
+  const handleCreateAdFromAnalytics = (context: string) => {
+    setAdContext(context)
     setTab('ads')
   }
 
@@ -120,7 +119,11 @@ export default function OrgDashboard() {
           <AnalyticsUI onCreateAd={handleCreateAdFromAnalytics} />
         </div>
         <div className={tab === 'ads' ? 'flex-1 overflow-y-auto' : 'hidden'}>
-          <AdPipelineUI onBack={() => setTab('find')} />
+          <AdPipelineUI
+            onBack={() => setTab('find')}
+            insightsContext={adContext || undefined}
+            onInsightsConsumed={() => setAdContext('')}
+          />
         </div>
       </main>
     </div>
