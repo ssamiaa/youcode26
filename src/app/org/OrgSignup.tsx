@@ -88,19 +88,19 @@ export default function OrgSignup({ onSubmit }: OrgSignupProps) {
 
   if (status === 'success') {
     return (
-      <div className="min-h-screen bg-white flex flex-col">
-        <header className="border-b border-gray-200 px-4 py-3">
-          <p className="text-xs font-bold tracking-widest text-gray-400 uppercase">Organizer</p>
+      <div className="min-h-screen bg-[#002855] flex flex-col">
+        <header className="border-b border-[#1A3A52] px-4 py-3">
+          <p className="text-xs font-bold tracking-widest text-[#8B9DB5] uppercase">Organizer</p>
         </header>
         <div className="flex-1 flex items-center justify-center px-4">
           <div
             role="alert"
             aria-live="polite"
-            className="max-w-sm w-full border border-gray-200 rounded-2xl p-8 text-center shadow-sm"
+            className="max-w-sm w-full border border-[#A9CEE8] rounded-2xl p-8 text-center shadow-sm bg-[#1A3A52]"
           >
-            <p className="text-xs font-bold tracking-widest text-gray-400 uppercase mb-3">Registered</p>
-            <p className="font-semibold text-black text-sm">{form.legal_name}</p>
-            <p className="text-xs text-gray-500 mt-1">Your organization has been added.</p>
+            <p className="text-xs font-bold tracking-widest text-[#8B9DB5] uppercase mb-3">Registered</p>
+            <p className="font-semibold text-white text-sm">{form.legal_name}</p>
+            <p className="text-xs text-[#8B9DB5] mt-1">Your organization has been added.</p>
           </div>
         </div>
       </div>
@@ -108,20 +108,20 @@ export default function OrgSignup({ onSubmit }: OrgSignupProps) {
   }
 
   return (
-    <div className="min-h-screen bg-white flex flex-col">
+    <div className="min-h-screen bg-[#002855] flex flex-col">
       {/* Header — matches dashboard */}
-      <header className="border-b border-gray-200 px-4 py-3">
-        <p className="text-xs font-bold tracking-widest text-gray-400 uppercase">Organizer</p>
+      <header className="border-b border-[#1A3A52] px-4 py-3">
+        <p className="text-xs font-bold tracking-widest text-[#8B9DB5] uppercase">Organizer</p>
       </header>
 
       {/* Form card */}
       <div className="flex-1 flex items-start justify-center px-4 py-8 overflow-y-auto">
         <div className="w-full max-w-lg">
-          <div className="border border-gray-200 rounded-2xl shadow-sm overflow-hidden">
+          <div className="border border-[#A9CEE8] rounded-2xl shadow-sm overflow-hidden bg-[#1A3A52]">
             {/* Card header */}
-            <div className="px-6 py-6 border-b border-gray-100">
-              <h1 className="text-3xl font-bold !text-black">Register your organization</h1>
-              <p className="text-sm text-gray-400 mt-1.5">Connect with volunteers in your community.</p>
+            <div className="px-6 py-6 border-b border-[#4A7BA7]">
+              <h1 className="text-3xl font-bold text-white">Register your organization</h1>
+              <p className="text-sm text-[#8B9DB5] mt-1.5">Connect with volunteers in your community.</p>
             </div>
 
             {/* Card body */}
@@ -129,7 +129,7 @@ export default function OrgSignup({ onSubmit }: OrgSignupProps) {
               <div className="space-y-5">
 
                 <fieldset className="space-y-4">
-                  <legend className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">
+                  <legend className="text-xs font-bold text-[#8B9DB5] uppercase tracking-widest mb-3">
                     Organization identity
                   </legend>
                   <Field id="legal_name" name="legal_name" label="Legal name" value={form.legal_name} onChange={handleChange} autoComplete="organization" required />
@@ -137,10 +137,10 @@ export default function OrgSignup({ onSubmit }: OrgSignupProps) {
                   <Field id="BN" name="BN" label="Business Number (BN)" value={form.BN} onChange={handleChange} placeholder="123456789" required />
                 </fieldset>
 
-                <hr className="border-gray-100" />
+                <hr className="border-[#4A7BA7]" />
 
                 <fieldset>
-                  <legend className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">
+                  <legend className="text-xs font-bold text-[#8B9DB5] uppercase tracking-widest mb-3">
                     Sector
                   </legend>
                   <SelectField id="sector" name="sector" label="Sector" value={form.sector} onChange={handleChange} required>
@@ -149,10 +149,10 @@ export default function OrgSignup({ onSubmit }: OrgSignupProps) {
                   </SelectField>
                 </fieldset>
 
-                <hr className="border-gray-100" />
+                <hr className="border-[#4A7BA7]" />
 
                 <fieldset className="space-y-4">
-                  <legend className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">
+                  <legend className="text-xs font-bold text-[#8B9DB5] uppercase tracking-widest mb-3">
                     Address
                   </legend>
                   <Field id="address1" name="address1" label="Address line 1" value={form.address1} onChange={handleChange} autoComplete="address-line1" required />
@@ -181,9 +181,9 @@ export default function OrgSignup({ onSubmit }: OrgSignupProps) {
               <button
                 type="submit"
                 disabled={status === 'submitting'}
-                className="mt-6 w-full bg-black text-white text-sm font-semibold py-2.5 px-4 rounded-xl
-                           hover:bg-gray-900 focus-visible:outline focus-visible:outline-2
-                           focus-visible:outline-offset-2 focus-visible:outline-black
+                className="mt-6 w-full bg-[#0070E0] text-white text-sm font-semibold py-2.5 px-4 rounded-xl
+                           hover:bg-[#5DADE2] focus-visible:outline focus-visible:outline-2
+                           focus-visible:outline-offset-2 focus-visible:outline-[#0070E0]
                            disabled:opacity-50 disabled:cursor-not-allowed
                            transition-colors duration-150"
               >
@@ -213,7 +213,7 @@ interface FieldProps {
 function Field({ id, name, label, value, onChange, autoComplete, required, placeholder }: FieldProps) {
   return (
     <div>
-      <label htmlFor={id} className="block text-xs font-semibold text-black mb-1.5">
+      <label htmlFor={id} className="block text-xs font-semibold text-[#A9CEE8] mb-1.5">
         {label}{required && <span className="sr-only"> (required)</span>}
       </label>
       <input
@@ -226,9 +226,9 @@ function Field({ id, name, label, value, onChange, autoComplete, required, place
         required={required}
         placeholder={placeholder}
         aria-required={required}
-        className="w-full border border-gray-200 rounded-xl text-black text-sm px-3 py-2.5
-                   focus:outline-none focus:border-black focus:ring-1 focus:ring-black
-                   placeholder:text-gray-300 bg-white"
+        className="w-full border border-[#4A7BA7] rounded-xl text-white text-sm px-3 py-2.5
+                   focus:outline-none focus:border-[#0070E0] focus:ring-1 focus:ring-[#0070E0]
+                   placeholder:text-[#4A7BA7] bg-[#002855]"
       />
     </div>
   )
@@ -248,7 +248,7 @@ interface SelectFieldProps {
 function SelectField({ id, name, label, value, onChange, autoComplete, required, children }: SelectFieldProps) {
   return (
     <div>
-      <label htmlFor={id} className="block text-xs font-semibold text-black mb-1.5">
+      <label htmlFor={id} className="block text-xs font-semibold text-[#A9CEE8] mb-1.5">
         {label}{required && <span className="sr-only"> (required)</span>}
       </label>
       <select
@@ -259,9 +259,9 @@ function SelectField({ id, name, label, value, onChange, autoComplete, required,
         autoComplete={autoComplete}
         required={required}
         aria-required={required}
-        className="w-full border border-gray-200 rounded-xl text-black text-sm px-3 py-2.5
-                   focus:outline-none focus:border-black focus:ring-1 focus:ring-black
-                   bg-white appearance-none"
+        className="w-full border border-[#4A7BA7] rounded-xl text-white text-sm px-3 py-2.5
+                   focus:outline-none focus:border-[#0070E0] focus:ring-1 focus:ring-[#0070E0]
+                   bg-[#002855] appearance-none"
       >
         {children}
       </select>

@@ -198,11 +198,11 @@ export default function ConversationUI({ onSendMessage, initialMessage, onNewCha
 
       {/* Header */}
       {onNewChat && (
-        <div className="flex items-center justify-end px-4 py-2 border-b border-gray-100">
+        <div className="flex items-center justify-end px-4 py-2 border-b border-[#A9CEE8]">
           <button
             type="button"
             onClick={onNewChat}
-            className="text-xs text-gray-400 hover:text-black transition-colors duration-150"
+            className="text-xs text-[#8B9DB5] hover:text-[#0070E0] transition-colors duration-150"
           >
             New chat
           </button>
@@ -223,8 +223,8 @@ export default function ConversationUI({ onSendMessage, initialMessage, onNewCha
             <div
               className={`max-w-[80%] px-4 py-3 text-sm leading-relaxed whitespace-pre-wrap break-words rounded-2xl
                 ${msg.role === 'user'
-                  ? 'bg-black text-white rounded-br-sm'
-                  : 'bg-gray-100 text-black border border-gray-200 rounded-bl-sm'
+                  ? 'bg-[#0070E0] text-white rounded-br-sm'
+                  : 'bg-[#F5F7FA] text-[#2C3E50] border border-[#A9CEE8] rounded-bl-sm'
                 }`}
             >
               {msg.text}
@@ -280,10 +280,10 @@ export default function ConversationUI({ onSendMessage, initialMessage, onNewCha
             disabled={loading}
             aria-disabled={loading}
             className={`flex-1 resize-none border text-black text-sm px-3 py-2.5 rounded-xl
-                       focus:outline-none focus:border-black focus:ring-1 focus:ring-black
+                       focus:outline-none focus:border-[#0070E0] focus:ring-1 focus:ring-[#0070E0]
                        placeholder:text-gray-400 bg-white disabled:opacity-50
                        max-h-32 overflow-y-auto transition-colors duration-150
-                       ${recording ? 'border-black' : 'border-gray-400'}`}
+                       ${recording ? 'border-[#0070E0]' : 'border-gray-400'}`}
             style={{ fieldSizing: 'content' } as React.CSSProperties}
           />
 
@@ -297,8 +297,8 @@ export default function ConversationUI({ onSendMessage, initialMessage, onNewCha
                          focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2
                          focus-visible:outline-black transition-colors duration-150
                          ${recording
-                           ? 'bg-black text-white border-black'
-                           : 'bg-white text-black border-gray-400 hover:border-black'
+                           ? 'bg-[#0070E0] text-white border-[#0070E0]'
+                           : 'bg-white text-[#4A7BA7] border-gray-400 hover:border-[#0070E0] hover:text-[#0070E0]'
                          }`}
             >
               <MicIcon recording={recording} />
@@ -311,9 +311,9 @@ export default function ConversationUI({ onSendMessage, initialMessage, onNewCha
             disabled={loading || !input.trim()}
             aria-label="Send message"
             className="flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-full
-                       bg-black text-white border border-black
-                       hover:bg-gray-900 focus-visible:outline focus-visible:outline-2
-                       focus-visible:outline-offset-2 focus-visible:outline-black
+                       bg-[#0070E0] text-white border border-[#0070E0]
+                       hover:bg-[#5DADE2] focus-visible:outline focus-visible:outline-2
+                       focus-visible:outline-offset-2 focus-visible:outline-[#0070E0]
                        disabled:opacity-40 disabled:cursor-not-allowed
                        transition-colors duration-150"
           >

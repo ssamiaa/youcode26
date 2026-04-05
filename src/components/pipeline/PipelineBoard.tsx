@@ -79,7 +79,7 @@ export default function PipelineBoard({ orgId, refreshTrigger, onVolunteerConnec
           <button
             onClick={fetchPipeline}
             aria-label="Refresh pipeline"
-            className="text-xs text-gray-400 hover:text-black transition-colors duration-150 underline"
+            className="text-xs text-[#8B9DB5] hover:text-white transition-colors duration-150 underline"
           >
             Refresh
           </button>
@@ -94,8 +94,8 @@ export default function PipelineBoard({ orgId, refreshTrigger, onVolunteerConnec
                 onClick={() => setActiveTag(activeTag === tag ? null : tag)}
                 className={`text-xs px-2.5 py-1 rounded-full border transition-colors duration-100
                   ${activeTag === tag
-                    ? 'bg-black text-white border-black'
-                    : 'bg-white text-gray-500 border-gray-300 hover:border-black hover:text-black'
+                    ? 'bg-[#0070E0] text-white border-[#0070E0]'
+                    : 'bg-[#1A3A52] text-[#8B9DB5] border-[#4A7BA7] hover:border-[#5DADE2] hover:text-white'
                   }`}
               >
                 {tag}
@@ -124,15 +124,15 @@ function KanbanColumn({ col, entries, onConnect, onVolunteerConnected }: { col: 
   return (
     <section
       aria-label={`${col.label} column`}
-      className="flex flex-col rounded-2xl border border-gray-200 overflow-hidden flex-shrink-0 w-[280px] md:w-auto"
+      className="flex flex-col rounded-2xl border border-[#A9CEE8] overflow-hidden flex-shrink-0 w-[280px] md:w-auto bg-[#1A3A52]"
     >
-      <div className="px-4 py-4 border-b border-gray-100 flex items-center justify-between">
+      <div className="px-4 py-4 border-b border-[#4A7BA7] flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold !text-black">{col.label}</h2>
-          <p className="text-sm text-gray-400 mt-0.5">{col.description}</p>
+          <h2 className="text-2xl font-bold text-white">{col.label}</h2>
+          <p className="text-sm text-[#8B9DB5] mt-0.5">{col.description}</p>
         </div>
         <span
-          className="text-xl font-bold tabular-nums bg-gray-100 text-black px-3.5 py-1.5 rounded-full"
+          className="text-xl font-bold tabular-nums bg-[#0070E0] text-white px-3.5 py-1.5 rounded-full"
           aria-label={`${entries.length} entries`}
         >
           {entries.length}
@@ -141,7 +141,7 @@ function KanbanColumn({ col, entries, onConnect, onVolunteerConnected }: { col: 
 
       <ul className="p-3 space-y-2">
         {entries.length === 0 ? (
-          <li className="text-xs text-gray-300 text-center py-6">Empty</li>
+          <li className="text-xs text-[#4A7BA7] text-center py-6">Empty</li>
         ) : (
           entries.map(entry => <PipelineCard key={entry.id} entry={entry} onConnect={onConnect} onVolunteerConnected={onVolunteerConnected} />)
         )}
@@ -175,39 +175,39 @@ function PipelineCard({ entry: e, onConnect, onVolunteerConnected }: { entry: Pi
   }
 
   return (
-    <li className="rounded-xl border border-gray-200 p-3 flex flex-col gap-2 bg-white">
+    <li className="rounded-xl border border-[#A9CEE8] p-3 flex flex-col gap-2 bg-white">
       <div className="flex items-start justify-between gap-2">
-        <p className="text-sm font-semibold text-black leading-tight">
+        <p className="text-sm font-semibold text-[#2C3E50] leading-tight">
           {e.first_name} {e.last_name}
         </p>
         {e.score != null && (
-          <span className="text-xs font-bold tabular-nums text-black bg-gray-100 px-2 py-0.5 rounded-full flex-shrink-0">
+          <span className="text-xs font-bold tabular-nums text-white bg-[#0070E0] px-2 py-0.5 rounded-full flex-shrink-0">
             {e.score}%
           </span>
         )}
       </div>
 
       {e.reason && (
-        <p className="text-xs text-gray-600 leading-relaxed">{e.reason}</p>
+        <p className="text-xs text-[#4A7BA7] leading-relaxed">{e.reason}</p>
       )}
 
       {e.neighbourhood && (
-        <p className="text-xs text-gray-500">{e.neighbourhood}</p>
+        <p className="text-xs text-[#4A7BA7]">{e.neighbourhood}</p>
       )}
 
       {e.skills && e.skills.length > 0 && (
         <ul className="flex flex-wrap gap-1" aria-label="Skills">
           {e.skills.slice(0, 3).map(s => (
-            <li key={s} className="text-xs bg-gray-100 text-black px-2 py-0.5 rounded-full">{s}</li>
+            <li key={s} className="text-xs bg-[#F5F7FA] text-[#002855] px-2 py-0.5 rounded-full">{s}</li>
           ))}
           {e.skills.length > 3 && (
-            <li className="text-xs text-gray-400">+{e.skills.length - 3}</li>
+            <li className="text-xs text-[#8B9DB5]">+{e.skills.length - 3}</li>
           )}
         </ul>
       )}
 
       {e.session_tag && (
-        <span className="text-xs border border-gray-200 text-gray-500 px-1.5 py-0.5 rounded-full self-start truncate max-w-full">
+        <span className="text-xs border border-[#A9CEE8] text-[#4A7BA7] px-1.5 py-0.5 rounded-full self-start truncate max-w-full">
           {e.session_tag}
         </span>
       )}
@@ -218,18 +218,18 @@ function PipelineCard({ entry: e, onConnect, onVolunteerConnected }: { entry: Pi
           onClick={handleConnect}
           disabled={connecting || connected}
           className={`mt-1 w-full py-2 text-xs font-semibold rounded-xl border transition-colors duration-150
-            focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-black
+            focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0070E0]
             disabled:cursor-not-allowed
             ${connected
-              ? 'bg-white text-gray-400 border-gray-200'
-              : 'bg-black text-white border-black hover:bg-gray-900 disabled:opacity-50'
+              ? 'bg-white text-[#8B9DB5] border-[#A9CEE8]'
+              : 'bg-[#0070E0] text-white border-[#0070E0] hover:bg-[#5DADE2] disabled:opacity-50'
             }`}
           aria-label={`Connect with ${e.first_name} ${e.last_name}`}
         >
           {connected ? 'Connected' : connecting ? 'Connecting…' : 'Connect'}
         </button>
       ) : (
-        <p className="text-xs text-gray-400 mt-1">{formatDate(e.created_at)}</p>
+        <p className="text-xs text-[#8B9DB5] mt-1">{formatDate(e.created_at)}</p>
       )}
     </li>
   )

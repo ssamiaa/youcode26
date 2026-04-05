@@ -63,13 +63,13 @@ export default function OrgDashboard() {
   }
 
   return (
-    <div className="h-screen bg-white flex flex-col overflow-hidden">
-      <header className="border-b border-gray-200 px-4 py-3 flex items-center justify-between">
-        <p className="text-xs font-bold tracking-widest text-gray-400 uppercase">Organizer</p>
+    <div className="h-screen bg-[#002855] flex flex-col overflow-hidden">
+      <header className="border-b border-[#1A3A52] px-4 py-3 flex items-center justify-between bg-[#002855]">
+        <p className="text-xs font-bold tracking-widest text-[#8B9DB5] uppercase">Organizer</p>
         <ImportCSV />
       </header>
 
-      <nav aria-label="Dashboard sections" className="border-b border-gray-200 px-4 flex gap-0">
+      <nav aria-label="Dashboard sections" className="border-b border-[#1A3A52] px-4 flex gap-0 bg-[#002855]">
         {([
           { id: 'find',     label: 'Find volunteers' },
           { id: 'pipeline', label: 'Pipeline' },
@@ -82,8 +82,8 @@ export default function OrgDashboard() {
             onClick={() => setTab(t.id)}
             className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors duration-100
               ${tab === t.id
-                ? 'border-black text-black'
-                : 'border-transparent text-gray-400 hover:text-black hover:border-gray-300'
+                ? 'border-[#0070E0] text-white'
+                : 'border-transparent text-[#8B9DB5] hover:text-white hover:border-[#5DADE2]'
               }`}
           >
             {t.label}
@@ -132,7 +132,7 @@ function FindTab({ volunteers, onSend, sessionTag, onNewChat, onConnect, connect
       {/* Left — conversation card */}
       <section
         aria-label="Find volunteers by conversation"
-        className="flex-1 min-h-0 lg:flex-none lg:w-[520px] rounded-2xl border border-gray-200 overflow-hidden shadow-sm flex flex-col"
+        className="flex-1 min-h-0 lg:flex-none lg:w-[520px] rounded-2xl border border-[#A9CEE8] overflow-hidden shadow-sm flex flex-col"
       >
         <ConversationUI onSendMessage={onSend} onNewChat={onNewChat} />
       </section>
@@ -140,22 +140,22 @@ function FindTab({ volunteers, onSend, sessionTag, onNewChat, onConnect, connect
       {/* Right — results card */}
       <section
         aria-label="Matched volunteers"
-        className="flex-1 min-h-0 rounded-2xl border border-gray-200 shadow-sm overflow-y-auto p-5"
+        className="flex-1 min-h-0 rounded-2xl border border-[#A9CEE8] shadow-sm overflow-y-auto p-5 bg-[#1A3A52]"
       >
         {volunteers.length === 0 ? (
           <div className="h-full flex items-center justify-center">
-            <p className="text-sm text-gray-400 text-center">
+            <p className="text-sm text-[#8B9DB5] text-center">
               Matched volunteers will appear here after your search.
             </p>
           </div>
         ) : (
           <>
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-sm font-bold !text-black">
+              <h2 className="text-sm font-bold text-white">
                 {volunteers.length} match{volunteers.length !== 1 ? 'es' : ''} found
               </h2>
               {sessionTag && (
-                <span className="text-xs border border-gray-300 text-gray-600 px-2 py-0.5 rounded-full">
+                <span className="text-xs border border-[#4A7BA7] text-[#A9CEE8] px-2 py-0.5 rounded-full">
                   {sessionTag}
                 </span>
               )}
@@ -203,12 +203,12 @@ function VolunteerCardItem({ volunteer: v, sessionTag, onConnect, connected: ext
   }
 
   return (
-    <li className="border border-gray-200 rounded-2xl p-4 flex flex-col gap-3">
+    <li className="border border-[#A9CEE8] rounded-2xl p-4 flex flex-col gap-3 bg-white">
       <div className="flex items-start justify-between gap-2">
-        <p className="font-semibold text-sm text-black">{v.first_name} {v.last_name}</p>
+        <p className="font-semibold text-sm text-[#2C3E50]">{v.first_name} {v.last_name}</p>
         {v.match_score != null && (
           <span
-            className="text-xs font-bold tabular-nums text-black bg-gray-100 px-2 py-0.5 rounded-full flex-shrink-0"
+            className="text-xs font-bold tabular-nums text-white bg-[#0070E0] px-2 py-0.5 rounded-full flex-shrink-0"
             aria-label={`Match score ${v.match_score} out of 100`}
           >
             {v.match_score}%
@@ -217,10 +217,10 @@ function VolunteerCardItem({ volunteer: v, sessionTag, onConnect, connected: ext
       </div>
 
       {v.match_reason && (
-        <p className="text-xs text-gray-600 leading-relaxed">{v.match_reason}</p>
+        <p className="text-xs text-[#4A7BA7] leading-relaxed">{v.match_reason}</p>
       )}
 
-      <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-gray-500">
+      <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-[#4A7BA7]">
         <span>{v.neighbourhood}</span>
         {v.availability && <span>{v.availability}</span>}
         {v.hours_available_per_month && <span>{v.hours_available_per_month}h/mo</span>}
@@ -228,18 +228,18 @@ function VolunteerCardItem({ volunteer: v, sessionTag, onConnect, connected: ext
 
       <div className="flex flex-wrap gap-1.5">
         {v.skills?.map(s => (
-          <span key={s} className="text-xs bg-gray-100 text-black px-2 py-0.5 rounded-full">{s}</span>
+          <span key={s} className="text-xs bg-[#F5F7FA] text-[#002855] px-2 py-0.5 rounded-full">{s}</span>
         ))}
         {v.languages_spoken?.filter((_, i) => i > 0 || (v.languages_spoken?.length ?? 0) > 1).map(l => (
-          <span key={l} className="text-xs border border-gray-300 text-gray-600 px-2 py-0.5 rounded-full">{l}</span>
+          <span key={l} className="text-xs border border-[#A9CEE8] text-[#4A7BA7] px-2 py-0.5 rounded-full">{l}</span>
         ))}
         {v.background_check_status && (
-          <span className="text-xs border border-gray-300 text-gray-600 px-2 py-0.5 rounded-full">
+          <span className="text-xs border border-[#A9CEE8] text-[#4A7BA7] px-2 py-0.5 rounded-full">
             {v.background_check_status}
           </span>
         )}
         {v.has_vehicle && (
-          <span className="text-xs border border-gray-300 text-gray-600 px-2 py-0.5 rounded-full">Has vehicle</span>
+          <span className="text-xs border border-[#A9CEE8] text-[#4A7BA7] px-2 py-0.5 rounded-full">Has vehicle</span>
         )}
       </div>
 
@@ -248,11 +248,11 @@ function VolunteerCardItem({ volunteer: v, sessionTag, onConnect, connected: ext
         onClick={handleConnect}
         disabled={connecting || connected}
         className={`mt-1 w-full py-2 text-xs font-semibold rounded-xl border transition-colors duration-150
-          focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-black
+          focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0070E0]
           disabled:cursor-not-allowed
           ${connected
-            ? 'bg-white text-gray-400 border-gray-200'
-            : 'bg-black text-white border-black hover:bg-gray-900 disabled:opacity-50'
+            ? 'bg-white text-[#8B9DB5] border-[#A9CEE8]'
+            : 'bg-[#0070E0] text-white border-[#0070E0] hover:bg-[#5DADE2] disabled:opacity-50'
           }`}
         aria-label={`Connect with ${v.first_name} ${v.last_name}`}
       >
