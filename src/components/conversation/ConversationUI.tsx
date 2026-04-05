@@ -10,11 +10,13 @@ export interface MatchResult {
   reply: string
   volunteers?: unknown[]
   session_tag?: string
+  session_id?: string
 }
 
 interface ConversationUIProps {
   onSendMessage: (text: string) => Promise<MatchResult>
   initialMessage?: string
+  onNewChat?: () => void
 }
 
 const INITIAL_MSG: Message = {
@@ -52,7 +54,7 @@ function getSpeechRecognition(): (new () => SpeechRecognitionInstance) | null {
   return window.SpeechRecognition ?? window.webkitSpeechRecognition ?? null
 }
 
-export default function ConversationUI({ onSendMessage, initialMessage }: ConversationUIProps) {
+export default function ConversationUI({ onSendMessage, initialMessage, onNewChat }: ConversationUIProps) {
   const firstMsg: Message = initialMessage
     ? { ...INITIAL_MSG, text: initialMessage }
     : INITIAL_MSG
@@ -193,6 +195,19 @@ export default function ConversationUI({ onSendMessage, initialMessage }: Conver
     <div className="flex flex-col h-full bg-white">
       {/* Screen-reader live region */}
       <div ref={liveRef} aria-live="polite" aria-atomic="true" className="sr-only" />
+
+      {/* Header */}
+      {onNewChat && (
+        <div className="flex items-center justify-end px-4 py-2 border-b border-gray-100">
+          <button
+            type="button"
+            onClick={onNewChat}
+            className="text-xs text-gray-400 hover:text-black transition-colors duration-150"
+          >
+            New chat
+          </button>
+        </div>
+      )}
 
       {/* Message thread */}
       <div
