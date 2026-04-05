@@ -168,7 +168,7 @@ function PipelineCard({ entry: e, onConnect, onVolunteerConnected }: { entry: Pi
       await fetch('/api/outreach', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: e.id }),
+        body: JSON.stringify({ volunteer_id: e.volunteer_id, session_tag: e.session_tag }),
       })
       setConnected(true)
       onConnect()
