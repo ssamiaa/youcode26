@@ -124,6 +124,8 @@ export interface PipelineState {
   alignment: AlignmentResult | null;
   copyAssets: CopyAssets | null;
   cloudinaryUrl: string | null;
+  /** The single outreach insight clause the Architect was anchored to, if any. */
+  focusedInsight: string | null;
   error: string | null;
 }
 
@@ -251,7 +253,8 @@ const MODEL = 'claude-haiku-4-5';
 
 const INITIAL_STATE: PipelineState = {
   step: 'idle', stepMessage: '', blueprint: null, imageUrl: null,
-  imageSummary: null, alignment: null, copyAssets: null, cloudinaryUrl: null, error: null,
+  imageSummary: null, alignment: null, copyAssets: null, cloudinaryUrl: null,
+  focusedInsight: null, error: null,
 };
 
 // ─── Anthropic Client (browser-safe) ─────────────────────────────────────────
@@ -308,20 +311,7 @@ function decodeModelEscapesInCopy(text: string): string {
 
 // ─── Phase 1: Architect ───────────────────────────────────────────────────────
 
-async function runArchitect(input: AdInput): Promise<PostBlueprint> {
-  // When insights are present, pick ONE random clause so the campaign has
-  // a single sharp focus rather than trying to honour all data at once.
-  let focusedInsight: string | null = null;
-  if (input.insightsContext?.trim()) {
-    const clauses = input.insightsContext
-      .split(/\.\s+/)
-      .map(s => s.replace(/\.$/, '').trim())
-      .filter(Boolean);
-    if (clauses.length > 0) {
-      focusedInsight = clauses[Math.floor(Math.random() * clauses.length)];
-    }
-  }
-
+async function runArchitect(input: AdInput, focusedInsight: string | null): Promise<PostBlueprint> {
   const system = `You are a non-profit campaign architect. Produce a creative blueprint.
 Pick ONE archetype:
 - Skill-Builder: audiences who want to contribute expertise and feel professionally valuable.
@@ -674,10 +664,23 @@ export function useAdPipeline() {
     // what the model would otherwise default to.
     const scrimStyle = SCRIM_STYLES[Math.floor(Math.random() * SCRIM_STYLES.length)];
 
-    setState({ ...INITIAL_STATE, step: 'blueprint', stepMessage: 'Architecting your campaign...' });
+    // When insights are present, pick ONE random clause so the campaign has
+    // a single sharp focus rather than trying to honour all data at once.
+    let focusedInsight: string | null = null;
+    if (input.insightsContext?.trim()) {
+      const clauses = input.insightsContext
+        .split(/\.\s+/)
+        .map(s => s.replace(/\.$/, '').trim())
+        .filter(Boolean);
+      if (clauses.length > 0) {
+        focusedInsight = clauses[Math.floor(Math.random() * clauses.length)];
+      }
+    }
+
+    setState({ ...INITIAL_STATE, step: 'blueprint', stepMessage: 'Architecting your campaign...', focusedInsight });
 
     try {
-      const blueprint = await runArchitect(input);
+      const blueprint = await runArchitect(input, focusedInsight);
       patch({ blueprint, step: 'sourcing', stepMessage: 'Sourcing imagery from Pexels...' });
 
       const imageUrl = await runHunter(blueprint.pexelsQuery, input.sector);
@@ -702,7 +705,8 @@ export function useAdPipeline() {
 
       setState({
         step: 'done', stepMessage: 'Ad ready!',
-        blueprint, imageUrl, imageSummary, alignment, copyAssets, cloudinaryUrl, error: null,
+        blueprint, imageUrl, imageSummary, alignment, copyAssets, cloudinaryUrl,
+        focusedInsight, error: null,
       });
     } catch (err) {
       setState({

@@ -101,7 +101,7 @@ function PipelineProgress({
 
 // ─── Progressive Reveal Cards ────────────────────────────────────────────────
 
-function BlueprintCard({ blueprint }: { blueprint: PostBlueprint }) {
+function BlueprintCard({ blueprint, focusedInsight }: { blueprint: PostBlueprint; focusedInsight?: string | null }) {
   const meta = ARCHETYPE_META[blueprint.archetype];
   return (
     <div className="reveal-card reveal-blueprint">
@@ -115,6 +115,14 @@ function BlueprintCard({ blueprint }: { blueprint: PostBlueprint }) {
           {blueprint.archetype}
         </span>
       </div>
+      {focusedInsight && (
+        <div className="blueprint-anchor-row">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+          </svg>
+          <span>"{focusedInsight}"</span>
+        </div>
+      )}
       <p className="reveal-idea">"{blueprint.idea}"</p>
       <div className="reveal-meta-row">
         <div className="reveal-meta-item">
@@ -202,10 +210,11 @@ interface AdResultProps {
   blueprint: PostBlueprint;
   imageSummary: string;
   alignment: AlignmentResult;
+  focusedInsight?: string | null;
   onReset: () => void;
 }
 
-function AdResult({ cloudinaryUrl, imageUrl, copyAssets, blueprint, imageSummary, alignment, onReset }: AdResultProps) {
+function AdResult({ cloudinaryUrl, imageUrl, copyAssets, blueprint, imageSummary, alignment, focusedInsight, onReset }: AdResultProps) {
   const [imgLoaded, setImgLoaded] = useState(false);
   const [imgError, setImgError]   = useState(false);
   const archetypeMeta = ARCHETYPE_META[blueprint.archetype];
@@ -219,7 +228,7 @@ function AdResult({ cloudinaryUrl, imageUrl, copyAssets, blueprint, imageSummary
           </svg>
           Ad Generated
         </div>
-        <div className="result-header-pills">
+          <div className="result-header-pills">
           <div
             className="archetype-pill"
             style={{ '--archetype-color': archetypeMeta.color } as React.CSSProperties}
@@ -227,6 +236,14 @@ function AdResult({ cloudinaryUrl, imageUrl, copyAssets, blueprint, imageSummary
             <span>{archetypeMeta.icon}</span>
             {blueprint.archetype}
           </div>
+          {focusedInsight && (
+            <div className="anchor-insight-pill">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+              </svg>
+              Targeted Insight
+            </div>
+          )}
           <div className="placement-pill">{SCRIM_LABELS[copyAssets.builderSpec.scrimStyle]}</div>
         </div>
       </div>
@@ -314,6 +331,20 @@ function AdResult({ cloudinaryUrl, imageUrl, copyAssets, blueprint, imageSummary
           Pipeline Rationale
         </div>
         <div className="insights-grid">
+          {focusedInsight && (
+            <div className="insight-card insight-card--anchor">
+              <div className="insight-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                  <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+                </svg>
+              </div>
+              <div className="insight-content">
+                <div className="insight-label">Anchor Insight</div>
+                <p className="insight-text">"{focusedInsight}"</p>
+              </div>
+            </div>
+          )}
+
           <div className="insight-card">
             <div className="insight-icon">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -399,7 +430,7 @@ export function AdPipelineUI({ onBack, insightsContext, onInsightsConsumed }: {
   const {
     step, stepMessage,
     blueprint, imageUrl, imageSummary, alignment, copyAssets, cloudinaryUrl,
-    error, run, reset,
+    focusedInsight, error, run, reset,
   } = useAdPipeline();
 
   // ── Fetch org from Supabase ───────────────────────────────────────────────
@@ -561,7 +592,7 @@ export function AdPipelineUI({ onBack, insightsContext, onInsightsConsumed }: {
           <div className="processing-view">
             <PipelineProgress step={step} stepMessage={stepMessage} />
             <div className="reveal-stream">
-              {blueprint  && <BlueprintCard blueprint={blueprint} />}
+              {blueprint  && <BlueprintCard blueprint={blueprint} focusedInsight={focusedInsight} />}
               {imageUrl   && <ImageCard imageUrl={imageUrl} imageSummary={imageSummary} />}
               {alignment  && <AlignmentCard alignment={alignment} />}
               {copyAssets && <CopyCard copyAssets={copyAssets} />}
@@ -578,6 +609,7 @@ export function AdPipelineUI({ onBack, insightsContext, onInsightsConsumed }: {
             blueprint={blueprint}
             imageSummary={imageSummary}
             alignment={alignment}
+            focusedInsight={focusedInsight}
             onReset={reset}
           />
         )}
