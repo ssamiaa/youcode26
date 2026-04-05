@@ -458,7 +458,7 @@ function InputForm({ onSubmit }: { onSubmit: (input: AdInput) => void }) {
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 
-export function AdPipelineUI() {
+export function AdPipelineUI({ onBack }: { onBack?: () => void } = {}) {
   const { stage, stageMessage, result, error, run, reset } = useAdPipeline();
 
   const isProcessing = ['strategizing', 'evaluating', 'retrying', 'hunting', 'building'].includes(
@@ -469,6 +469,14 @@ export function AdPipelineUI() {
     <div className="ad-pipeline">
       {/* Header */}
       <header className="pipeline-header">
+        {onBack && (
+          <button className="pipeline-back-btn" onClick={onBack}>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <polyline points="15 18 9 12 15 6" />
+            </svg>
+            Back to dashboard
+          </button>
+        )}
         <div className="header-badge">AI-POWERED</div>
         <h1>Non-Profit Ad Pipeline</h1>
         <p>
