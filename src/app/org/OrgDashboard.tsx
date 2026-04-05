@@ -38,6 +38,7 @@ export default function OrgDashboard() {
     setChatKey(k => k + 1)
     setVolunteers([])
     setSessionTag('')
+    setSessionId('')
     setConnectedIds(new Set())
   }
 
