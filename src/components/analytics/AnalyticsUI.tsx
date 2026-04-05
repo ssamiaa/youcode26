@@ -197,17 +197,17 @@ export default function AnalyticsUI({ onCreateAd }: AnalyticsUIProps) {
           {topSkills.length === 0 ? (
             <p className="text-xs text-[#4A7BA7] py-4 text-center">No interested volunteers yet</p>
           ) : (
-            <ResponsiveContainer width="100%" height={200}>
-              <BarChart data={topSkills} margin={{ left: 0, right: 20 }}>
-                <XAxis dataKey="skill" tick={{ fill: '#8B9DB5', fontSize: 10 }} axisLine={false} tickLine={false} interval={0} angle={-20} textAnchor="end" height={48} />
-                <YAxis tick={{ fill: '#8B9DB5', fontSize: 11 }} axisLine={false} tickLine={false} allowDecimals={false} />
+            <ResponsiveContainer width="100%" height={Math.max(200, topSkills.length * 32)}>
+              <BarChart data={topSkills} layout="vertical" margin={{ left: 10, right: 24 }}>
+                <XAxis type="number" tick={{ fill: '#8B9DB5', fontSize: 11 }} axisLine={false} tickLine={false} allowDecimals={false} />
+                <YAxis type="category" dataKey="skill" width={130} tick={{ fill: '#A9CEE8', fontSize: 11 }} axisLine={false} tickLine={false} />
                 <Tooltip
                   contentStyle={{ background: '#1A3A52', border: '1px solid #4A7BA7', borderRadius: 8, fontSize: 12 }}
                   labelStyle={{ color: '#A9CEE8' }}
                   itemStyle={{ color: '#fff' }}
                   cursor={{ fill: 'rgba(255,255,255,0.04)' }}
                 />
-                <Bar dataKey="count" fill="#5DADE2" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="count" fill="#5DADE2" radius={[0, 4, 4, 0]} />
               </BarChart>
             </ResponsiveContainer>
           )}
