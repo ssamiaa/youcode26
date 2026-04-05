@@ -35,15 +35,21 @@ app.post('/api/match', async (req, res) => {
   }
 
   // Generate a new session ID if this is the first message
-  const id = session_id ?? `session-${Date.now()}`
+  const id = (session_id && session_id !== '') ? session_id : `session-${Date.now()}`
+
 
   // Accumulate all messages so Claude has full context from the whole conversation
   const previous = sessions.get(id) ?? ''
   const accumulated = previous ? `${previous}. ${message}` : message
   sessions.set(id, accumulated)
 
+  console.log('SESSION ID:', id)
+  console.log('ACCUMULATED:', accumulated)
+
   // Claude parses the full accumulated conversation so far
   const criteria = await parseNeed(accumulated)
+
+  console.log('PARSED CRITERIA:', JSON.stringify(criteria))
 
   // Only block on truly essential fields — language, availability, neighbourhood
   if (!criteria.languages.length) {

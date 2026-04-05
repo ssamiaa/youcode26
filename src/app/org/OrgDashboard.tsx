@@ -36,6 +36,7 @@ export default function OrgDashboard() {
     setChatKey(k => k + 1)
     setVolunteers([])
     setSessionTag('')
+    setSessionId('')
   }
 
   async function handleSend(text: string): Promise<MatchResult> {
