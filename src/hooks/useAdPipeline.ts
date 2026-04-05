@@ -308,23 +308,81 @@ function decodeModelEscapesInCopy(text: string): string {
     .replace(/%2[cC]/g, ',');
 }
 
+// ─── Algorithmic Audience Picker ──────────────────────────────────────────────
+
+/**
+ * Always-available demographic buckets for the audience pool.
+ * A random one is selected each run; any group surfaced in the outreach
+ * insights is appended first so it can win the selection.
+ */
+const BASE_AUDIENCES = ['children', 'adults', 'retirees'] as const;
+
+/** Keyword → canonical group name, searched in the focusedInsight string. */
+const AUDIENCE_KEYWORDS: Array<[RegExp, string]> = [
+  [/\b(youth|young people|teen|teenager|student|kid)\b/i,                  'youth'],
+  [/\b(senior|elder|retired|retiree|aging|older adult)\b/i,                'retirees'],
+  [/\b(child|children|kid|minor)\b/i,                                      'children'],
+  [/\b(adult|professional|worker|employee)\b/i,                            'adults'],
+  [/\b(famil(y|ies)|parent|caregiver)\b/i,                                 'families'],
+  [/\b(veteran|military|service member)\b/i,                               'veterans'],
+  [/\b(homeless|unhoused|housing.insecure)\b/i,                            'people experiencing homelessness'],
+  [/\b(immigrant|newcomer|refugee|asylum)\b/i,                             'newcomers and immigrants'],
+  [/\b(women|woman|girls?)\b/i,                                            'women and girls'],
+  [/\b(indigenous|first nations|m[eé]tis|inuit)\b/i,                      'Indigenous communities'],
+  [/\b(disabilit(y|ies)|disabled|accessibility)\b/i,                      'people with disabilities'],
+  [/\b(low.income|poverty|underserved|marginalised|marginalized)\b/i,      'low-income individuals'],
+];
+
+function pickTargetAudience(focusedInsight: string | null): string {
+  const pool: string[] = [...BASE_AUDIENCES];
+
+  if (focusedInsight) {
+    for (const [pattern, label] of AUDIENCE_KEYWORDS) {
+      if (pattern.test(focusedInsight) && !pool.includes(label)) {
+        // Prepend so insight-derived groups are weighted more heavily
+        // (they appear once extra, doubling their chance when pool is small).
+        pool.unshift(label);
+      }
+    }
+  }
+
+  return pool[Math.floor(Math.random() * pool.length)];
+}
+
 // ─── Phase 1: Architect ───────────────────────────────────────────────────────
 
-async function runArchitect(input: AdInput, focusedInsight: string | null): Promise<PostBlueprint> {
+const ARCHETYPES: AdArchetype[] = ['Skill-Builder', 'Community-Seeker', 'Legacy-Maker'];
+
+function pickArchetype(): AdArchetype {
+  return ARCHETYPES[Math.floor(Math.random() * ARCHETYPES.length)];
+}
+
+async function runArchitect(
+  input: AdInput,
+  focusedInsight: string | null,
+  targetAudience: string,
+  archetype: AdArchetype,
+): Promise<PostBlueprint> {
+  const archetypeDesc: Record<AdArchetype, string> = {
+    'Skill-Builder':    'professionals who crave the feeling of their expertise creating undeniable real-world impact — not another CV line, but proof they mattered.',
+    'Community-Seeker': 'people driven by deep belonging, neighbourhood pride, and the ache of being part of something larger than themselves.',
+    'Legacy-Maker':     'those haunted by what they\'ll leave behind — for their children, their city, or history.',
+  };
+
   const system = `You are an award-winning non-profit campaign strategist. Find the single sharpest, most emotionally resonant angle — the insight that makes someone stop mid-scroll.
 
-Pick ONE archetype:
-- Skill-Builder: professionals who crave the feeling of their expertise creating undeniable real-world impact — not another CV line, but proof they mattered.
-- Community-Seeker: people driven by deep belonging, neighbourhood pride, and the ache of being part of something larger than themselves.
-- Legacy-Maker: those haunted by what they'll leave behind — for their children, their city, or history.
+The archetype and target audience have been pre-selected. Your job is to craft the idea, feeling, and image query that best serves them.
+
+Archetype (FIXED — echo exactly): ${archetype}
+— Speaks to: ${archetypeDesc[archetype]}
 
 Rules:
 - "idea" = ONE provocative sentence. Specific, unexpected, human. Ask: "What is the counterintuitive truth about this cause?" Avoid clichés. Never write "make a difference" or "help others."
-- "feeling" = a visceral 2–3 word compound emotion. Not "hope" — "quiet defiance." Not "sad" — "aching solidarity." Not "proud" — "fierce tenderness."
-- "targetAudience" = vivid portrait of ONE real person, not a demographic bucket. Give them a life detail.
+- "feeling" = a visceral 2–3 word compound emotion that captures the idea.
+- "targetAudience" = The target demographic has been pre-selected as: "${targetAudience}". Write 1–2 sentences describing how this specific group connects to the org's mission. Do NOT change the group.
 - "pexelsQuery" = 3–5 words describing what the camera LITERALLY sees. Cinematic. A decisive moment. No abstractions, no metaphors.${focusedInsight ? `
 
-A single outreach data point anchors this entire campaign. Let it exclusively determine the archetype, core idea, and target audience. Do not draw on any other information.` : ''}
+A single outreach data point anchors this entire campaign. Let it exclusively determine the core idea. Do not draw on any other information.` : ''}
 RESPOND WITH VALID JSON ONLY.`;
 
   const user = `Blueprint for: ${input.orgName} | ${input.sector} | ${input.location}
@@ -333,8 +391,8 @@ ${focusedInsight ? `\nAnchor insight (build the entire campaign around this one 
 {
   "idea": "one provocative, specific sentence — the counterintuitive truth",
   "feeling": "visceral 2–3 word compound emotion",
-  "targetAudience": "1–2 sentence vivid portrait of one real person",
-  "archetype": "Skill-Builder | Community-Seeker | Legacy-Maker",
+  "targetAudience": "1–2 sentences — must be about ${targetAudience}",
+  "archetype": "${archetype}",
   "pexelsQuery": "3–5 word cinematic literal photo description"
 }`;
 
@@ -714,7 +772,9 @@ export function useAdPipeline() {
     setState({ ...INITIAL_STATE, step: 'blueprint', stepMessage: 'Architecting your campaign...', focusedInsight });
 
     try {
-      const blueprint = await runArchitect(input, focusedInsight);
+      const targetAudience = pickTargetAudience(focusedInsight);
+      const archetype = pickArchetype();
+      const blueprint = await runArchitect(input, focusedInsight, targetAudience, archetype);
       patch({ blueprint, step: 'sourcing', stepMessage: 'Sourcing imagery from Pexels...' });
 
       const imageUrl = await runHunter(blueprint.pexelsQuery, input.sector);
