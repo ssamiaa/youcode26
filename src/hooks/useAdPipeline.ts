@@ -152,11 +152,8 @@ interface SlotPosition {
 }
 
 const LAYOUT_SLOTS: Record<ScrimStyle, Partial<Record<SlotName, SlotPosition>>> = {
-  // ── band-south ──  Band occupies bottom 340px.
-  // Slot centers measured from the south edge (positive = upward).
-  // body floats above the band for a layered look.
+  // ── band-south ──  Band occupies bottom 340px. No body — too little vertical room.
   'band-south': {
-    body:     { size: 26, gravity: 'south', y: 420, x:  0, width: 900 },
     headline: { size: 60, gravity: 'south', y: 275, x:  0, width: 900 },
     cta:      { size: 30, gravity: 'south', y: 150, x:  0, width: 400 },
   },
@@ -169,18 +166,19 @@ const LAYOUT_SLOTS: Record<ScrimStyle, Partial<Record<SlotName, SlotPosition>>> 
   },
   // ── panel-left ──  Panel occupies left 460px (full height).
   // y = signed offset from vertical center (negative = above).
+  // Headline pulled up and body shrunk to 20px so all four slots breathe.
   'panel-left': {
-    eyebrow:  { size: 20, gravity: 'west', y: -260, x: 26, width: 390 },
-    headline: { size: 52, gravity: 'west', y: -100, x: 26, width: 390 },
-    body:     { size: 24, gravity: 'west', y:   40, x: 26, width: 390 },
-    cta:      { size: 30, gravity: 'west', y:  150, x: 26, width: 360 },
+    eyebrow:  { size: 20, gravity: 'west', y: -270, x: 26, width: 390 },
+    headline: { size: 48, gravity: 'west', y: -135, x: 26, width: 390 },
+    body:     { size: 20, gravity: 'west', y:   30, x: 26, width: 390 },
+    cta:      { size: 30, gravity: 'west', y:  175, x: 26, width: 360 },
   },
   // ── panel-right ──  Mirror of panel-left.
   'panel-right': {
-    eyebrow:  { size: 20, gravity: 'east', y: -260, x: 26, width: 390 },
-    headline: { size: 52, gravity: 'east', y: -100, x: 26, width: 390 },
-    body:     { size: 24, gravity: 'east', y:   40, x: 26, width: 390 },
-    cta:      { size: 30, gravity: 'east', y:  150, x: 26, width: 360 },
+    eyebrow:  { size: 20, gravity: 'east', y: -270, x: 26, width: 390 },
+    headline: { size: 48, gravity: 'east', y: -135, x: 26, width: 390 },
+    body:     { size: 20, gravity: 'east', y:   30, x: 26, width: 390 },
+    cta:      { size: 30, gravity: 'east', y:  175, x: 26, width: 360 },
   },
   // ── full ──  Wash over entire image. All slots use center gravity.
   'full': {
@@ -189,13 +187,12 @@ const LAYOUT_SLOTS: Record<ScrimStyle, Partial<Record<SlotName, SlotPosition>>> 
     cta:      { size: 30, gravity: 'center', y:   78, x: 0, width: 340 },
     body:     { size: 24, gravity: 'center', y:  155, x: 0, width: 880 },
   },
-  // ── dual ──  Thin north band (200px) + normal south band (340px).
-  // eyebrow in the north band; headline/cta in the south band.
+  // ── dual ──  Thin north band (200px) + normal south band (340px). No body — south band
+  // already carries headline + CTA and has no room for a third text element.
   'dual': {
     eyebrow:  { size: 20, gravity: 'north', y:  78, x: 0, width: 600 },
     headline: { size: 56, gravity: 'south', y: 275, x: 0, width: 900 },
     cta:      { size: 30, gravity: 'south', y: 150, x: 0, width: 400 },
-    body:     { size: 24, gravity: 'south', y: 410, x: 0, width: 900 },
   },
 };
 
@@ -210,27 +207,28 @@ const LAYOUT_SLOT_GUIDES: Record<ScrimStyle, string> = {
   Available slots:
     "headline" — main text in the upper part of the band          (REQUIRED)
     "cta"      — call-to-action in the lower part of the band     (REQUIRED)
-    "body"     — short excerpt floating above the band            (optional)`,
+  NOTE: No body slot — use a punchy headline only.`,
 
   'band-north': `Dark band across the TOP ~35% of the image.
   Available slots:
     "eyebrow"  — small label/chip at the very top of the band     (optional)
     "headline" — main text filling the band                       (REQUIRED)
     "cta"      — call-to-action at the BOTTOM of the image,       (REQUIRED)
-                 deliberately contrasting with the north headline`,
+                 deliberately contrasting with the north headline
+  NOTE: No body slot — headline + CTA only.`,
 
   'panel-left': `Dark vertical panel on the LEFT ~43%; subject visible on the right.
   Available slots:
     "eyebrow"  — small label near the top of the panel            (optional)
     "headline" — main text in the upper-centre of the panel       (REQUIRED)
-    "body"     — short excerpt in the centre of the panel         (optional)
+    "body"     — 2–3 sentence excerpt in the centre of the panel  (STRONGLY RECOMMENDED, maxBodyChars: 85–105)
     "cta"      — call-to-action in the lower area                 (REQUIRED)`,
 
   'panel-right': `Dark vertical panel on the RIGHT ~43%; subject visible on the left.
   Available slots:
     "eyebrow"  — small label near the top of the panel            (optional)
     "headline" — main text in the upper-centre of the panel       (REQUIRED)
-    "body"     — short excerpt in the centre of the panel         (optional)
+    "body"     — 2–3 sentence excerpt in the centre of the panel  (STRONGLY RECOMMENDED, maxBodyChars: 85–105)
     "cta"      — call-to-action in the lower area                 (REQUIRED)`,
 
   'full': `Semi-transparent colour wash over the ENTIRE image.
@@ -238,13 +236,14 @@ const LAYOUT_SLOT_GUIDES: Record<ScrimStyle, string> = {
     "eyebrow"  — small sector or org label at the top             (optional)
     "headline" — dominant large text in the centre                (REQUIRED)
     "cta"      — call-to-action below the headline                (REQUIRED)
-    "body"     — short excerpt below the CTA                      (optional)`,
+    "body"     — short supporting sentence below the CTA          (optional, maxBodyChars: 90–110)`,
 
   'dual': `Thin band at TOP AND BOTTOM; clean photo visible in the middle.
   Available slots:
     "eyebrow"  — short label in the TOP band (urgency, category)  (optional)
     "headline" — main text in the BOTTOM band                     (REQUIRED)
-    "cta"      — call-to-action in the BOTTOM band, below headline (REQUIRED)`,
+    "cta"      — call-to-action in the BOTTOM band, below headline (REQUIRED)
+  NOTE: No body slot — the south band only has room for headline + CTA.`,
 };
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -485,7 +484,7 @@ Return exactly this shape:
         "slot": "headline | cta | eyebrow | body",
         "textSource": "headline | cta | body_excerpt | custom",
         "customText": "<only when textSource=custom>",
-        "maxBodyChars": <int 50–90, only when textSource=body_excerpt>,
+        "maxBodyChars": <int 90–130, only when textSource=body_excerpt>,
         "fontFamily": "Arial | Impact | Georgia | Verdana | Courier",
         "bold": <true|false>,
         "italic": <true|false>,

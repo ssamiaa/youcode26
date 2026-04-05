@@ -4,6 +4,58 @@ import type { AdInput, PipelineStep, AdArchetype, PostBlueprint, AlignmentResult
 import { supabase } from '../lib/supabaseClient';
 import './AdPipelineUI.css';
 
+// ─── Gallery Types & Storage ──────────────────────────────────────────────────
+
+const GALLERY_KEY = 'relinkd_ad_gallery';
+const GALLERY_MAX = 20;
+
+interface SavedAd {
+  id: string;
+  timestamp: number;
+  cloudinaryUrl: string;
+  headline: string;
+  cta: string;
+  archetype: AdArchetype;
+  orgName: string;
+}
+
+function loadGallery(): SavedAd[] {
+  try { return JSON.parse(localStorage.getItem(GALLERY_KEY) ?? '[]'); }
+  catch { return []; }
+}
+
+function persistGallery(ads: SavedAd[]): void {
+  localStorage.setItem(GALLERY_KEY, JSON.stringify(ads));
+}
+
+function formatTimeAgo(ts: number): string {
+  const m = Math.floor((Date.now() - ts) / 60000);
+  if (m < 1) return 'just now';
+  if (m < 60) return `${m}m ago`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h}h ago`;
+  return `${Math.floor(h / 24)}d ago`;
+}
+
+async function downloadAd(url: string, headline: string): Promise<void> {
+  const filename = `${headline.replace(/[^a-z0-9]+/gi, '-').toLowerCase()}.jpg`;
+  try {
+    const res = await fetch(url, { mode: 'cors' });
+    if (!res.ok) throw new Error();
+    const blob = await res.blob();
+    const blobUrl = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = blobUrl;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
+  } catch {
+    window.open(url, '_blank');
+  }
+}
+
 // ─── Step Definitions ────────────────────────────────────────────────────────
 
 interface StepDef {
@@ -405,23 +457,115 @@ function AdResult({ cloudinaryUrl, imageUrl, copyAssets, blueprint, imageSummary
         </div>
       </div>
 
-      <button className="btn-reset" onClick={onReset}>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <polyline points="1 4 1 10 7 10" />
-          <path d="M3.51 15a9 9 0 1 0 .49-4.95" />
-        </svg>
-        Generate Another Ad
-      </button>
+      <div className="result-actions">
+        <button
+          className="btn-download"
+          onClick={() => downloadAd(cloudinaryUrl, copyAssets.headline)}
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+            <polyline points="7 10 12 15 17 10" />
+            <line x1="12" y1="15" x2="12" y2="3" />
+          </svg>
+          Save as Image
+        </button>
+        <button className="btn-reset" onClick={onReset}>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <polyline points="1 4 1 10 7 10" />
+            <path d="M3.51 15a9 9 0 1 0 .49-4.95" />
+          </svg>
+          Generate Another
+        </button>
+      </div>
     </div>
   );
 }
 
 
+// ─── Gallery Components ───────────────────────────────────────────────────────
+
+function GalleryCard({ ad, onRemove }: { ad: SavedAd; onRemove: (id: string) => void }) {
+  const [loaded, setLoaded] = useState(false);
+  const meta = ARCHETYPE_META[ad.archetype];
+  return (
+    <div className="gallery-card">
+      <a href={ad.cloudinaryUrl} target="_blank" rel="noopener noreferrer" className="gallery-card-thumb">
+        {!loaded && <div className="gallery-thumb-skeleton"><div className="skeleton-shimmer" /></div>}
+        <img
+          src={ad.cloudinaryUrl}
+          alt={ad.headline}
+          onLoad={() => setLoaded(true)}
+          className={loaded ? 'loaded' : ''}
+        />
+        <div className="gallery-card-overlay">
+          <span className="gallery-card-open-label">Open full size ↗</span>
+        </div>
+      </a>
+      <div className="gallery-card-meta">
+        <p className="gallery-card-headline">{ad.headline}</p>
+        <div className="gallery-card-footer">
+          <span
+            className="gallery-card-archetype"
+            style={{ '--archetype-color': meta.color } as React.CSSProperties}
+          >
+            {meta.icon} {ad.archetype}
+          </span>
+          <div className="gallery-card-actions">
+            <span className="gallery-card-time">{formatTimeAgo(ad.timestamp)}</span>
+            <button
+              className="gallery-card-action-btn"
+              onClick={() => downloadAd(ad.cloudinaryUrl, ad.headline)}
+              title="Save image"
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="7 10 12 15 17 10" />
+                <line x1="12" y1="15" x2="12" y2="3" />
+              </svg>
+            </button>
+            <button
+              className="gallery-card-action-btn gallery-card-action-btn--remove"
+              onClick={() => onRemove(ad.id)}
+              title="Remove"
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function AdGallery({ gallery, onRemove }: { gallery: SavedAd[]; onRemove: (id: string) => void }) {
+  if (gallery.length === 0) return null;
+  return (
+    <section className="ad-gallery">
+      <div className="gallery-header">
+        <span className="gallery-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <rect x="3" y="3" width="18" height="18" rx="2" />
+            <circle cx="8.5" cy="8.5" r="1.5" />
+            <polyline points="21 15 16 10 5 21" />
+          </svg>
+          Previously Generated
+        </span>
+        <span className="gallery-count">{gallery.length} / {GALLERY_MAX}</span>
+      </div>
+      <div className="gallery-grid">
+        {gallery.map(ad => <GalleryCard key={ad.id} ad={ad} onRemove={onRemove} />)}
+      </div>
+    </section>
+  );
+}
+
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 const ARCH_STRIP = ['Architect', 'Hunter', 'Observer', 'Aligner', 'Copywriter', 'Builder'] as const;
 
-export function AdPipelineUI({ onBack, insightsContext, onInsightsConsumed }: {
+export function AdPipelineUI({ insightsContext, onInsightsConsumed }: {
   onBack?: () => void;
   insightsContext?: string;
   /** Called once the insights-driven pipeline has been auto-started, so the
@@ -441,6 +585,38 @@ export function AdPipelineUI({ onBack, insightsContext, onInsightsConsumed }: {
 
   // Track which insights string we've already consumed so we never double-fire.
   const consumedInsightRef = useRef<string | null>(null);
+
+  // ── Gallery ───────────────────────────────────────────────────────────────
+  const [gallery, setGallery] = useState<SavedAd[]>(loadGallery);
+  const savedUrlRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (step !== 'done' || !cloudinaryUrl || !copyAssets || !blueprint) return;
+    if (savedUrlRef.current === cloudinaryUrl) return;
+    savedUrlRef.current = cloudinaryUrl;
+    const entry: SavedAd = {
+      id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+      timestamp: Date.now(),
+      cloudinaryUrl,
+      headline: copyAssets.headline,
+      cta: copyAssets.cta,
+      archetype: blueprint.archetype,
+      orgName: orgInput?.orgName ?? '',
+    };
+    setGallery(prev => {
+      const updated = [entry, ...prev].slice(0, GALLERY_MAX);
+      persistGallery(updated);
+      return updated;
+    });
+  }, [step, cloudinaryUrl, copyAssets, blueprint, orgInput]);
+
+  function handleRemove(id: string) {
+    setGallery(prev => {
+      const updated = prev.filter(a => a.id !== id);
+      persistGallery(updated);
+      return updated;
+    });
+  }
 
   useEffect(() => {
     async function fetchOrg() {
@@ -503,14 +679,6 @@ export function AdPipelineUI({ onBack, insightsContext, onInsightsConsumed }: {
   return (
     <div className="ad-pipeline">
       <header className="pipeline-header">
-        {onBack && (
-          <button className="pipeline-back-btn" onClick={onBack}>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <polyline points="15 18 9 12 15 6" />
-            </svg>
-            Back to dashboard
-          </button>
-        )}
         <div className="header-badge">6-AGENT PIPELINE</div>
         <h1>Non-Profit Ad Generator</h1>
         <p>
@@ -616,6 +784,8 @@ export function AdPipelineUI({ onBack, insightsContext, onInsightsConsumed }: {
           </div>
         )}
       </main>
+
+      <AdGallery gallery={gallery} onRemove={handleRemove} />
     </div>
   );
 }

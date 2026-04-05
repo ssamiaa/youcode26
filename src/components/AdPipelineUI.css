@@ -1206,3 +1206,228 @@
     border-bottom: 1px solid var(--border);
   }
 }
+
+/* ─── Result Actions ─────────────────────────────────────────────────────────── */
+
+.result-actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.btn-download {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 28px;
+  border-radius: var(--radius);
+  border: 1.5px solid rgba(6, 182, 212, 0.4);
+  background: rgba(6, 182, 212, 0.08);
+  color: #06b6d4;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s, transform 0.15s;
+}
+
+.btn-download:hover {
+  background: rgba(6, 182, 212, 0.16);
+  border-color: rgba(6, 182, 212, 0.65);
+  transform: translateY(-1px);
+}
+
+.btn-download svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* ─── Ad Gallery ─────────────────────────────────────────────────────────────── */
+
+.ad-gallery {
+  width: 100%;
+  max-width: 900px;
+  margin-top: 56px;
+  padding-top: 32px;
+  border-top: 1px solid var(--border);
+}
+
+.gallery-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.gallery-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.gallery-title svg {
+  width: 14px;
+  height: 14px;
+}
+
+.gallery-count {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  padding: 2px 8px;
+  border-radius: 100px;
+}
+
+.gallery-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+  gap: 14px;
+}
+
+.gallery-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  transition: border-color 0.2s, transform 0.15s, box-shadow 0.2s;
+}
+
+.gallery-card:hover {
+  border-color: var(--border-focus);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(108, 99, 255, 0.12);
+}
+
+.gallery-card-thumb {
+  display: block;
+  position: relative;
+  aspect-ratio: 1;
+  overflow: hidden;
+  background: var(--bg-elevated);
+}
+
+.gallery-card-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.gallery-card-thumb img.loaded {
+  opacity: 1;
+}
+
+.gallery-thumb-skeleton {
+  position: absolute;
+  inset: 0;
+}
+
+.gallery-card-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.gallery-card-thumb:hover .gallery-card-overlay {
+  opacity: 1;
+}
+
+.gallery-card-open-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #fff;
+  letter-spacing: 0.02em;
+}
+
+.gallery-card-meta {
+  padding: 10px 12px 12px;
+}
+
+.gallery-card-headline {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0 0 8px;
+  line-height: 1.35;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.gallery-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.gallery-card-archetype {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--archetype-color, var(--accent));
+  background: color-mix(in srgb, var(--archetype-color, var(--accent)) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--archetype-color, var(--accent)) 25%, transparent);
+  padding: 2px 7px;
+  border-radius: 100px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.gallery-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.gallery-card-time {
+  font-size: 10px;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.gallery-card-action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 0;
+  transition: border-color 0.15s, color 0.15s;
+  flex-shrink: 0;
+}
+
+.gallery-card-action-btn svg {
+  width: 11px;
+  height: 11px;
+}
+
+.gallery-card-action-btn:hover {
+  border-color: #06b6d4;
+  color: #06b6d4;
+}
+
+.gallery-card-action-btn--remove:hover {
+  border-color: var(--red);
+  color: var(--red);
+}
