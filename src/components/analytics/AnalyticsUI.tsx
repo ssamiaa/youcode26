@@ -8,6 +8,7 @@ import type { PipelineEntry } from '../pipeline/PipelineBoard'
 interface AnalyticsUIProps {
   /** Full combined string, a single clause, or '' — forwarded to the post pipeline as `insightsContext`. */
   onCreateAd?: (context: string) => void
+  orgBn?: string
 }
 
 interface OtherInsightOption {
@@ -44,7 +45,7 @@ const STATUS_LABELS: Record<string, string> = {
   not_interested: 'Not interested',
 }
 
-export default function AnalyticsUI({ onCreateAd }: AnalyticsUIProps) {
+export default function AnalyticsUI({ onCreateAd, orgBn }: AnalyticsUIProps) {
   const [entries, setEntries] = useState<PipelineEntry[]>([])
   const [loading, setLoading] = useState(true)
   const [insightModalOpen, setInsightModalOpen] = useState(false)
@@ -56,7 +57,8 @@ export default function AnalyticsUI({ onCreateAd }: AnalyticsUIProps) {
   const fetchData = useCallback(async () => {
     setLoading(true)
     try {
-      const res = await fetch('/api/pipeline')
+      const url = orgBn ? `/api/pipeline?org_bn=${encodeURIComponent(orgBn)}` : '/api/pipeline'
+      const res = await fetch(url)
       if (!res.ok) { setEntries([]); return }
       const data: PipelineEntry[] = await res.json()
       setEntries(data)
@@ -65,7 +67,7 @@ export default function AnalyticsUI({ onCreateAd }: AnalyticsUIProps) {
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [orgBn])
 
   useEffect(() => { fetchData() }, [fetchData])
 

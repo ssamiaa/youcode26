@@ -38,7 +38,7 @@ export default function PipelineBoard({ orgId, refreshTrigger, onVolunteerConnec
 
   const fetchPipeline = useCallback(async () => {
     try {
-      const url = orgId ? `/api/pipeline?org_id=${orgId}` : '/api/pipeline'
+      const url = orgId ? `/api/pipeline?org_bn=${orgId}` : '/api/pipeline'
       const res = await fetch(url)
       if (!res.ok) { setEntries([]); return }
       const contentType = res.headers.get('content-type') ?? ''
