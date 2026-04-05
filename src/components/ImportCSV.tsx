@@ -130,8 +130,8 @@ export default function ImportCSV() {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="text-xs font-medium text-gray-500 hover:text-black border border-gray-200
-                   hover:border-black rounded-xl px-3 py-1.5 transition-colors duration-150"
+        className="text-xs font-medium text-[#A9CEE8] hover:text-white border border-[#4A7BA7]
+                   hover:border-[#A9CEE8] rounded-xl px-3 py-1.5 transition-colors duration-150"
       >
         Import Volunteers
       </button>
@@ -254,8 +254,8 @@ export default function ImportCSV() {
                   type="button"
                   onClick={handleImport}
                   disabled={rows.length === 0 || status === 'importing' || status === 'done' || !supabase}
-                  className="text-xs px-4 py-2 rounded-xl bg-black text-white font-semibold
-                             hover:bg-gray-900 disabled:opacity-40 disabled:cursor-not-allowed
+                  className="text-xs px-4 py-2 rounded-xl bg-[#0070E0] text-white font-semibold
+                             hover:bg-[#5DADE2] disabled:opacity-40 disabled:cursor-not-allowed
                              transition-colors duration-150"
                 >
                   {status === 'importing' ? 'Importing…' : status === 'done' ? 'Imported' : `Import ${rows.length > 0 ? rows.length : ''}`}
