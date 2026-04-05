@@ -28,9 +28,10 @@ const COLUMNS: Column[] = [
 interface PipelineBoardProps {
   orgId?: string
   refreshTrigger?: number
+  onVolunteerConnected?: (volunteerId: string) => void
 }
 
-export default function PipelineBoard({ orgId, refreshTrigger }: PipelineBoardProps) {
+export default function PipelineBoard({ orgId, refreshTrigger, onVolunteerConnected }: PipelineBoardProps) {
   const [entries, setEntries] = useState<PipelineEntry[]>([])
   const [loading, setLoading] = useState(true)
   const [activeTag, setActiveTag] = useState<string | null>(null)
@@ -74,12 +75,7 @@ export default function PipelineBoard({ orgId, refreshTrigger }: PipelineBoardPr
 
       {/* Header + tag filter */}
       <div className="px-4 pt-4 pb-3 max-w-6xl mx-auto w-full space-y-2">
-        <div className="flex items-center justify-between">
-          <p className="text-xs text-gray-400">
-            {entries.length === 0
-              ? 'No outreach yet.'
-              : `${filtered.length} of ${entries.length} volunteer${entries.length !== 1 ? 's' : ''}`}
-          </p>
+        <div className="flex items-center justify-end">
           <button
             onClick={fetchPipeline}
             aria-label="Refresh pipeline"
@@ -92,16 +88,6 @@ export default function PipelineBoard({ orgId, refreshTrigger }: PipelineBoardPr
         {/* Tag filter pills */}
         {allTags.length > 0 && (
           <div className="flex flex-wrap gap-1.5" role="group" aria-label="Filter by search label">
-            <button
-              onClick={() => setActiveTag(null)}
-              className={`text-xs px-2.5 py-1 rounded-full border transition-colors duration-100
-                ${activeTag === null
-                  ? 'bg-black text-white border-black'
-                  : 'bg-white text-gray-500 border-gray-300 hover:border-black hover:text-black'
-                }`}
-            >
-              All
-            </button>
             {allTags.map(tag => (
               <button
                 key={tag}
@@ -123,7 +109,7 @@ export default function PipelineBoard({ orgId, refreshTrigger }: PipelineBoardPr
       <div className="flex-1 overflow-auto px-4 pb-4">
         <div className="flex md:grid md:grid-cols-4 gap-3 min-w-[600px] md:min-w-0 max-w-6xl mx-auto">
           {COLUMNS.map(col => (
-            <KanbanColumn key={col.id} col={col} entries={byStatus(col.id)} onConnect={fetchPipeline} />
+            <KanbanColumn key={col.id} col={col} entries={byStatus(col.id)} onConnect={fetchPipeline} onVolunteerConnected={onVolunteerConnected} />
           ))}
         </div>
       </div>
@@ -134,7 +120,7 @@ export default function PipelineBoard({ orgId, refreshTrigger }: PipelineBoardPr
 
 // ── Column ────────────────────────────────────────────────────────────────────
 
-function KanbanColumn({ col, entries, onConnect }: { col: Column; entries: PipelineEntry[]; onConnect: () => void }) {
+function KanbanColumn({ col, entries, onConnect, onVolunteerConnected }: { col: Column; entries: PipelineEntry[]; onConnect: () => void; onVolunteerConnected?: (volunteerId: string) => void }) {
   return (
     <section
       aria-label={`${col.label} column`}
@@ -157,7 +143,7 @@ function KanbanColumn({ col, entries, onConnect }: { col: Column; entries: Pipel
         {entries.length === 0 ? (
           <li className="text-xs text-gray-300 text-center py-6">Empty</li>
         ) : (
-          entries.map(entry => <PipelineCard key={entry.id} entry={entry} onConnect={onConnect} />)
+          entries.map(entry => <PipelineCard key={entry.id} entry={entry} onConnect={onConnect} onVolunteerConnected={onVolunteerConnected} />)
         )}
       </ul>
     </section>
@@ -166,7 +152,7 @@ function KanbanColumn({ col, entries, onConnect }: { col: Column; entries: Pipel
 
 // ── Card ──────────────────────────────────────────────────────────────────────
 
-function PipelineCard({ entry: e, onConnect }: { entry: PipelineEntry; onConnect: () => void }) {
+function PipelineCard({ entry: e, onConnect, onVolunteerConnected }: { entry: PipelineEntry; onConnect: () => void; onVolunteerConnected?: (volunteerId: string) => void }) {
   const [connecting, setConnecting] = useState(false)
   const [connected, setConnected] = useState(false)
 
@@ -176,10 +162,11 @@ function PipelineCard({ entry: e, onConnect }: { entry: PipelineEntry; onConnect
       await fetch('/api/outreach', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ volunteer_id: e.volunteer_id, session_tag: e.session_tag }),
+        body: JSON.stringify({ id: e.id }),
       })
       setConnected(true)
       onConnect()
+      onVolunteerConnected?.(e.volunteer_id)
     } catch {
       // silently fail
     } finally {

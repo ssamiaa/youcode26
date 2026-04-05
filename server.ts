@@ -76,7 +76,7 @@ app.post('/api/match', async (req, res) => {
           role: 'user',
           content: `Volunteer: ${JSON.stringify(volunteer)}
 Need: ${accumulated}
-Write one sentence (max 25 words) explaining why this is a good match. Be specific.`
+Reply with a single plain sentence (no markdown, no bullet points, no headers) of max 25 words explaining why this volunteer is a good match. Only output the sentence itself.`
         }]
       })
       const reason = response.content[0].type === 'text' ? response.content[0].text : ''
@@ -122,24 +122,26 @@ Write one sentence (max 25 words) explaining why this is a good match. Be specif
   })
 })
 
-// Mark a matched volunteer as 'interested'
+// Mark a matched volunteer as 'sent'
 app.post('/api/outreach', async (req, res) => {
-  const { volunteer_id, session_tag } = req.body
-  if (!volunteer_id) return res.status(400).json({ error: 'volunteer_id required' })
+  const { id, volunteer_id, session_tag } = req.body
 
   const supabase = getSupabase()
 
-  // Try to update an existing match row for this volunteer + session
-  const { data, error } = await supabase
-    .from('matches')
-    .update({ status: 'sent' })
-    .eq('volunteer_id', volunteer_id)
-    .eq('session_tag', session_tag)
-    .select()
-    .single()
+  // If we have the exact match row id, use it; otherwise fall back to volunteer+session filter
+  let query = supabase.from('matches').update({ status: 'sent' })
+  if (id) {
+    query = query.eq('id', id)
+  } else {
+    if (!volunteer_id) return res.status(400).json({ error: 'id or volunteer_id required' })
+    query = query.eq('volunteer_id', volunteer_id)
+    if (session_tag != null) query = query.eq('session_tag', session_tag)
+  }
+
+  const { error } = await query
 
   if (error) return res.status(500).json({ error: error.message })
-  return res.json(data)
+  return res.json({ ok: true })
 })
 
 // Fetch pipeline entries joined with volunteer info
