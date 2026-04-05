@@ -36,6 +36,7 @@ export default function OrgDashboard() {
   const [connectedIds, setConnectedIds] = useState<Set<string>>(new Set())
 
   const [adContext, setAdContext] = useState<string>('')
+  void adContext
 
   function handleNewChat() {
     setChatKey(k => k + 1)
@@ -50,8 +51,8 @@ export default function OrgDashboard() {
     setPipelineRefreshKey(k => k + 1)
   }
 
-  const handleCreateAdFromAnalytics = (context: string) => {
-    setAdContext(context)
+  const handleCreateAdFromAnalytics = (_context: string) => {
+    setAdContext(_context)
     setTab('ads')
   }
 

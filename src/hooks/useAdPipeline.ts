@@ -519,8 +519,8 @@ Return exactly this shape:
 function sanitizeForCloudinary(text: string): string {
   return text
     .replace(/\//g, ' ')
-    .replace(/,/g, '%252C')
-    .replace(/\$/g, '%2524')
+    .replace(/,/g, '%2C')
+    .replace(/\$/g, '%24')
     .replace(/'/g, '%27')
     .replace(/!/g, '%21')
     .replace(/\(/g, '%28')
