@@ -1,10 +1,13 @@
 import { useState, useEffect, useRef } from 'react'
+import { useNavigate } from 'react-router-dom'
 import ConversationUI, { type MatchResult } from '../../components/conversation/ConversationUI'
 import PipelineBoard from '../../components/pipeline/PipelineBoard'
 import { AdPipelineUI } from '../../components/AdPipelineUI'
 import AnalyticsUI from '../../components/analytics/AnalyticsUI'
 import ImportCSV from '../../components/ImportCSV'
 import MyOrganizationUI from '../../components/org/MyOrganizationUI'
+import { supabase } from '../../lib/supabaseClient'
+import { useSession } from '../../lib/AuthContext'
 
 type Tab = 'find' | 'pipeline' | 'analytics' | 'posts' | 'organization'
 
@@ -28,6 +31,8 @@ export interface VolunteerCard {
 }
 
 export default function OrgDashboard() {
+  const navigate = useNavigate()
+  const session = useSession()
   const [tab, setTab] = useState<Tab>('find')
   const [volunteers, setVolunteers] = useState<VolunteerCard[]>([])
   const [sessionTag, setSessionTag] = useState('')
@@ -65,10 +70,11 @@ export default function OrgDashboard() {
   }
 
   async function handleSend(text: string): Promise<MatchResult> {
+    const orgBn = localStorage.getItem('relinkd_org_bn')
     const res = await fetch('/api/match', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message: text, session_tag: sessionTag, session_id: sessionId }),
+      body: JSON.stringify({ message: text, session_tag: sessionTag, session_id: sessionId, org_bn: orgBn }),
     })
     if (!res.ok) throw new Error(`Server error: ${res.status}`)
     const data: MatchResult = await res.json()
@@ -84,7 +90,18 @@ export default function OrgDashboard() {
       <header className="border-b border-[#1A3A52] px-4 py-3 flex items-center justify-between bg-[#002855]">
         {/* <img src="/logo.png" alt="Relinkd logo" className="h-16 w-16 rounded-xl object-contain" /> */}
         <p className="text-3xl font-bold tracking-widest text-[#8B9DB5] uppercase">Relinkd</p>
-        <ImportCSV />
+        <div className="flex items-center gap-3">
+          {session?.user.email && (
+            <span className="hidden sm:block text-xs text-[#8B9DB5] truncate max-w-[200px]">{session.user.email}</span>
+          )}
+          <ImportCSV />
+          <button
+            onClick={async () => { await supabase?.auth.signOut(); navigate('/org/login') }}
+            className="text-xs font-medium text-[#8B9DB5] hover:text-white border border-[#4A7BA7] hover:border-[#5DADE2] rounded-lg px-3 py-1.5 transition-colors"
+          >
+            Log out
+          </button>
+        </div>
       </header>
 
       <nav aria-label="Dashboard sections" className="border-b border-[#1A3A52] px-4 flex justify-center gap-0 bg-[#002855]">
@@ -124,10 +141,10 @@ export default function OrgDashboard() {
           />
         </div>
         <div className={tab === 'pipeline' ? 'flex-1 flex flex-col overflow-hidden' : 'hidden'}>
-          <PipelineBoard refreshTrigger={pipelineRefreshKey} onVolunteerConnected={handleConnect} />
+          <PipelineBoard orgId={localStorage.getItem('relinkd_org_bn') ?? undefined} refreshTrigger={pipelineRefreshKey} onVolunteerConnected={handleConnect} />
         </div>
         <div className={tab === 'analytics' ? 'flex-1 overflow-y-auto' : 'hidden'}>
-          <AnalyticsUI onCreateAd={handleCreateAdFromAnalytics} />
+          <AnalyticsUI orgBn={localStorage.getItem('relinkd_org_bn') ?? undefined} onCreateAd={handleCreateAdFromAnalytics} />
         </div>
         <div className={tab === 'posts' ? 'flex-1 overflow-y-auto' : 'hidden'}>
           <AdPipelineUI
@@ -135,12 +152,14 @@ export default function OrgDashboard() {
             insightsContext={adContext || undefined}
             onInsightsConsumed={() => setAdContext('')}
             organizationRefreshKey={orgRefreshKey}
+            userId={session?.user.id}
           />
         </div>
         <div className={tab === 'organization' ? 'flex-1 overflow-y-auto flex flex-col min-h-0' : 'hidden'}>
           <MyOrganizationUI
             organizationRefreshKey={orgRefreshKey}
             onSaved={() => setOrgRefreshKey(k => k + 1)}
+            userId={session?.user.id}
           />
         </div>
       </main>

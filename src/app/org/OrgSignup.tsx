@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import { supabase } from '../../lib/supabaseClient'
 
 export interface OrgSignupData {
@@ -56,6 +56,8 @@ const EMPTY_FORM: OrgSignupData = {
 export default function OrgSignup({ onSubmit }: OrgSignupProps) {
   const navigate = useNavigate()
   const [form, setForm] = useState<OrgSignupData>(EMPTY_FORM)
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
   const [status, setStatus] = useState<'idle' | 'submitting' | 'success' | 'error'>('idle')
   const [errorMsg, setErrorMsg] = useState('')
 
@@ -69,6 +71,12 @@ export default function OrgSignup({ onSubmit }: OrgSignupProps) {
     setErrorMsg('')
     try {
       if (!supabase) throw new Error('Supabase not configured.')
+
+      // 1. Create auth user
+      const { error: authErr } = await supabase.auth.signUp({ email, password })
+      if (authErr) throw new Error(authErr.message)
+
+      // 2. Insert org record
       const { error } = await supabase.from('organizations').insert({
         bn: form.BN,
         legal_name: form.legal_name,
@@ -83,6 +91,9 @@ export default function OrgSignup({ onSubmit }: OrgSignupProps) {
         sector: form.sector,
       })
       if (error) throw new Error(error.message)
+
+      // 3. Remember this org's BN so all views load the right row
+      localStorage.setItem('relinkd_org_bn', form.BN)
       await onSubmit?.(form)
       navigate('/org')
     } catch (err) {
@@ -113,6 +124,16 @@ export default function OrgSignup({ onSubmit }: OrgSignupProps) {
             {/* Card body */}
             <form onSubmit={handleSubmit} aria-label="Organization signup form" className="px-6 py-5">
               <div className="space-y-5">
+
+                <fieldset className="space-y-4">
+                  <legend className="text-xs font-bold text-[#8B9DB5] uppercase tracking-widest mb-3">
+                    Account credentials
+                  </legend>
+                  <Field id="email" name="email" label="Email" value={email} onChange={e => setEmail(e.target.value)} autoComplete="email" required type="email" />
+                  <Field id="password" name="password" label="Password" value={password} onChange={e => setPassword(e.target.value)} autoComplete="new-password" required type="password" placeholder="Min. 6 characters" />
+                </fieldset>
+
+                <hr className="border-[#4A7BA7]" />
 
                 <fieldset className="space-y-4">
                   <legend className="text-xs font-bold text-[#8B9DB5] uppercase tracking-widest mb-3">
@@ -176,6 +197,13 @@ export default function OrgSignup({ onSubmit }: OrgSignupProps) {
               >
                 {status === 'submitting' ? 'Registering…' : 'Register'}
               </button>
+
+              <p className="mt-4 text-center text-xs text-[#8B9DB5]">
+                Already have an account?{' '}
+                <Link to="/org/login" className="text-[#5DADE2] hover:text-white transition-colors">
+                  Sign in
+                </Link>
+              </p>
             </form>
           </div>
         </div>
@@ -195,9 +223,10 @@ interface FieldProps {
   autoComplete?: string
   required?: boolean
   placeholder?: string
+  type?: string
 }
 
-function Field({ id, name, label, value, onChange, autoComplete, required, placeholder }: FieldProps) {
+function Field({ id, name, label, value, onChange, autoComplete, required, placeholder, type = 'text' }: FieldProps) {
   return (
     <div>
       <label htmlFor={id} className="block text-xs font-semibold text-[#A9CEE8] mb-1.5">
@@ -206,7 +235,7 @@ function Field({ id, name, label, value, onChange, autoComplete, required, place
       <input
         id={id}
         name={name}
-        type="text"
+        type={type}
         value={value}
         onChange={onChange}
         autoComplete={autoComplete}

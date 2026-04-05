@@ -90,9 +90,9 @@ function getStepOrdinal(step: PipelineStep): number {
 // ─── Archetype Meta ──────────────────────────────────────────────────────────
 
 const ARCHETYPE_META: Record<AdArchetype, { color: string; icon: string }> = {
-  'Skill-Builder':     { color: '#06b6d4', icon: '⚙' },
-  'Community-Seeker':  { color: '#22c55e', icon: '◎' },
-  'Legacy-Maker':      { color: '#a855f7', icon: '◆' },
+  'Skill-Builder':     { color: '#0070E0', icon: '⚙' },
+  'Community-Seeker':  { color: '#5DADE2', icon: '◎' },
+  'Legacy-Maker':      { color: '#A9CEE8', icon: '◆' },
 };
 
 const SCRIM_LABELS: Record<ScrimStyle, string> = {
@@ -196,7 +196,7 @@ function BlueprintCard({ blueprint, focusedInsight }: { blueprint: PostBlueprint
   return (
     <div className="reveal-card reveal-blueprint">
       <div className="reveal-card-header">
-        <span className="reveal-phase-label">Blueprint</span>
+        <span className="reveal-phase-label">Post Concept</span>
         <span
           className="archetype-pill"
           style={{ '--archetype-color': meta.color } as React.CSSProperties}
@@ -239,7 +239,7 @@ function ImageCard({
   return (
     <div className="reveal-card reveal-image-card">
       <div className="reveal-card-header">
-        <span className="reveal-phase-label">Image Sourced</span>
+        <span className="reveal-phase-label">Image Found</span>
       </div>
       <div className="reveal-image-wrap">
         {!loaded && <div className="reveal-img-skeleton"><div className="skeleton-shimmer" /></div>}
@@ -252,7 +252,7 @@ function ImageCard({
       </div>
       {imageSummary && (
         <p className="reveal-summary">
-          <span className="reveal-meta-label">Observer: </span>
+          <span className="reveal-meta-label">About this image: </span>
           {imageSummary}
         </p>
       )}
@@ -264,9 +264,9 @@ function AlignmentCard({ alignment }: { alignment: AlignmentResult }) {
   return (
     <div className={`reveal-card reveal-alignment ${alignment.aligned ? 'aligned' : 'pivoted'}`}>
       <div className="reveal-card-header">
-        <span className="reveal-phase-label">Alignment</span>
+        <span className="reveal-phase-label">Image Check</span>
         <span className={`alignment-badge ${alignment.aligned ? 'badge-aligned' : 'badge-pivoted'}`}>
-          {alignment.aligned ? '✓ Aligned' : '↻ Pivoted'}
+          {alignment.aligned ? '✓ Great fit' : '↻ Adjusted'}
         </span>
       </div>
       <p className="reveal-idea">"{alignment.revisedIdea}"</p>
@@ -280,7 +280,7 @@ function CopyCard({ copyAssets }: { copyAssets: CopyAssets }) {
   return (
     <div className="reveal-card reveal-copy-card">
       <div className="reveal-card-header">
-        <span className="reveal-phase-label">Copy Ready</span>
+        <span className="reveal-phase-label">Copy Written</span>
         <span className="placement-pill">
           {SCRIM_LABELS[spec.scrimStyle]} · {spec.layers.length} layers
         </span>
@@ -355,7 +355,7 @@ function AdResult({ cloudinaryUrl, imageUrl, copyAssets, blueprint, imageSummary
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
           </svg>
-          Post Generated
+          Your Post Is Ready
         </div>
           <div className="result-header-pills">
           <div
@@ -502,20 +502,20 @@ function AdResult({ cloudinaryUrl, imageUrl, copyAssets, blueprint, imageSummary
           </section>
 
           <section className="meta-section urls-section">
-            <h3>URLs</h3>
+            <h3>Links</h3>
             <a href={imageUrl} target="_blank" rel="noopener noreferrer" className="url-link">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <rect x="3" y="3" width="18" height="18" rx="2" />
                 <circle cx="8.5" cy="8.5" r="1.5" />
                 <polyline points="21 15 16 10 5 21" />
               </svg>
-              Source Image (Pexels)
+              View Original Image
             </a>
             <a href={previewUrl} target="_blank" rel="noopener noreferrer" className="url-link">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z" />
               </svg>
-              Cloudinary Transform URL
+              Open Full-Size Post
             </a>
           </section>
         </div>
@@ -529,7 +529,7 @@ function AdResult({ cloudinaryUrl, imageUrl, copyAssets, blueprint, imageSummary
             <line x1="12" y1="8" x2="12" y2="12" />
             <line x1="12" y1="16" x2="12.01" y2="16" />
           </svg>
-          Pipeline Rationale
+          How Your Post Was Made
         </div>
         <div className="insights-grid">
           {focusedInsight && (
@@ -540,7 +540,7 @@ function AdResult({ cloudinaryUrl, imageUrl, copyAssets, blueprint, imageSummary
                 </svg>
               </div>
               <div className="insight-content">
-                <div className="insight-label">Anchor Insight</div>
+                <div className="insight-label">Based On Your Analytics</div>
                 <p className="insight-text">"{focusedInsight}"</p>
               </div>
             </div>
@@ -555,7 +555,7 @@ function AdResult({ cloudinaryUrl, imageUrl, copyAssets, blueprint, imageSummary
               </svg>
             </div>
             <div className="insight-content">
-              <div className="insight-label">Target Audience</div>
+              <div className="insight-label">Who This Post Is For</div>
               <p className="insight-text">{blueprint.targetAudience}</p>
             </div>
           </div>
@@ -568,7 +568,7 @@ function AdResult({ cloudinaryUrl, imageUrl, copyAssets, blueprint, imageSummary
               </svg>
             </div>
             <div className="insight-content">
-              <div className="insight-label">Blueprint Idea</div>
+              <div className="insight-label">Post Idea</div>
               <p className="insight-text">{blueprint.idea}</p>
             </div>
           </div>
@@ -581,7 +581,7 @@ function AdResult({ cloudinaryUrl, imageUrl, copyAssets, blueprint, imageSummary
               </svg>
             </div>
             <div className="insight-content">
-              <div className="insight-label">Image Analysis</div>
+              <div className="insight-label">About the Image</div>
               <p className="insight-text">{imageSummary}</p>
             </div>
           </div>
@@ -594,10 +594,10 @@ function AdResult({ cloudinaryUrl, imageUrl, copyAssets, blueprint, imageSummary
               </svg>
             </div>
             <div className="insight-content">
-              <div className="insight-label">Alignment Decision</div>
+              <div className="insight-label">Creative Direction</div>
               <p className="insight-text">
-                <strong style={{ color: alignment.aligned ? 'var(--green)' : 'var(--yellow)' }}>
-                  {alignment.aligned ? 'Image matched brief' : 'Idea pivoted to fit image'}
+                <strong style={{ color: alignment.aligned ? 'var(--accent-2)' : 'var(--yellow)' }}>
+                  {alignment.aligned ? 'Image matched the post concept' : 'Post concept adjusted to fit the image'}
                 </strong>
                 {' — '}{alignment.alignmentNote}
               </p>
@@ -623,7 +623,7 @@ function AdResult({ cloudinaryUrl, imageUrl, copyAssets, blueprint, imageSummary
             <polyline points="1 4 1 10 7 10" />
             <path d="M3.51 15a9 9 0 1 0 .49-4.95" />
           </svg>
-          Generate Another Post
+          Make Another Post
         </button>
       </div>
     </div>
@@ -884,12 +884,13 @@ function AdGallery({
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 
-const ARCH_STRIP = ['Architect', 'Hunter', 'Observer', 'Aligner', 'Copywriter', 'Builder'] as const;
+const ARCH_STRIP = ['Plan', 'Find Image', 'Analyze', 'Match', 'Write', 'Create'] as const;
 
 export function AdPipelineUI({
   insightsContext,
   onInsightsConsumed,
   organizationRefreshKey = 0,
+  userId,
 }: {
   onBack?: () => void;
   insightsContext?: string;
@@ -898,6 +899,8 @@ export function AdPipelineUI({
   onInsightsConsumed?: () => void;
   /** Bump after organization profile is saved so this view reloads org fields. */
   organizationRefreshKey?: number;
+  /** Supabase Auth user ID — used to filter the organization row for this user. */
+  userId?: string;
 } = {}) {
   const {
     step, stepMessage,
@@ -965,13 +968,14 @@ export function AdPipelineUI({
         setLoadingOrg(false);
         return;
       }
-      const { data, error: dbErr } = await supabase
-        .from('organizations')
-        .select('*')
-        // Stable pick when multiple rows exist; this schema has no `id` on organizations.
-        .order('bn', { ascending: true })
-        .limit(1)
-        .maybeSingle();
+      const storedBn = localStorage.getItem('relinkd_org_bn');
+      let q = supabase.from('organizations').select('*');
+      if (storedBn) {
+        q = q.eq('bn', storedBn);
+      } else {
+        q = q.order('bn', { ascending: true });
+      }
+      const { data, error: dbErr } = await q.limit(1).maybeSingle();
 
       if (dbErr) {
         setOrgFetchError(`Database error: ${dbErr.message} (code: ${dbErr.code})`);
@@ -995,7 +999,7 @@ export function AdPipelineUI({
       setLoadingOrg(false);
     }
     fetchOrg();
-  }, [organizationRefreshKey]);
+  }, [organizationRefreshKey, userId]);
 
   // ── Auto-start when insights context arrives ────────────────────────────
   // The ref guard ensures each unique insights string triggers exactly one run.
@@ -1026,10 +1030,10 @@ export function AdPipelineUI({
   return (
     <div className="ad-pipeline" ref={topRef}>
       <header className="pipeline-header">
-        <div className="header-badge">6-AGENT PIPELINE</div>
-        <h1>Outreach Post Creator</h1>
+        <div className="header-badge">AI-POWERED</div>
+        <h1>Post Creator</h1>
         <p>
-          A six-step agentic pipeline creates posts for your outreach campaign, using your outreach analytics and copywrite-free images from Pexels.
+          Create a ready-to-share post for your volunteer campaign in seconds. Just hit Generate — we'll handle the image, message, and design for you.
         </p>
       </header>
 
@@ -1049,7 +1053,7 @@ export function AdPipelineUI({
           loadingOrg ? (
             <div className="org-loading">
               <div className="org-loading-spinner" />
-              <p>Loading organization data…</p>
+              <p>Loading your organization info…</p>
             </div>
           ) : orgFetchError ? (
             <div className="error-view">
@@ -1060,13 +1064,13 @@ export function AdPipelineUI({
                   <line x1="12" y1="16" x2="12.01" y2="16" />
                 </svg>
               </div>
-              <h3>Organization not found</h3>
+              <h3>No organization set up yet</h3>
               <p className="error-message">{orgFetchError}</p>
             </div>
           ) : orgInput && (
             <div className="generate-view">
               <div className="org-card">
-                <div className="org-card-label">Generating for</div>
+                <div className="org-card-label">Creating a post for</div>
                 <div className="org-card-name">{orgInput.orgName}</div>
                 <div className="org-card-meta">
                   <span>{orgInput.sector}</span>
@@ -1124,7 +1128,7 @@ export function AdPipelineUI({
                 <line x1="12" y1="16" x2="12.01" y2="16" />
               </svg>
             </div>
-            <h3>Pipeline Error</h3>
+            <h3>Something went wrong</h3>
             <p className="error-message">{error}</p>
             <button className="btn-reset" onClick={handleRegenerate}>Try Again</button>
           </div>

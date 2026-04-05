@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, type FormEvent, type ChangeEvent } from 'react'
+import { useState, useEffect, useRef, type ChangeEvent } from 'react'
 import { supabase } from '../../lib/supabaseClient'
 import { PROVINCES, SECTORS } from '../../app/org/OrgSignup'
 import '../AdPipelineUI.css'
@@ -8,6 +8,8 @@ export interface MyOrganizationUIProps {
   organizationRefreshKey?: number
   /** Increment after a successful save so other views (e.g. Post Generator) can refetch. */
   onSaved?: () => void
+  /** Supabase Auth user ID — used to filter the organization row for this user. */
+  userId?: string
 }
 
 /** Match Post Generator: accept object, or a single-element array from older clients. */
@@ -100,6 +102,7 @@ function rowToForm(row: Record<string, unknown>): OrgForm {
 export default function MyOrganizationUI({
   organizationRefreshKey = 0,
   onSaved,
+  userId,
 }: MyOrganizationUIProps) {
   /** Column + value passed to `.eq()` so updates work when PK is not named `id`. */
   const [rowFilter, setRowFilter] = useState<{ column: string; value: string } | null>(null)
@@ -133,11 +136,15 @@ export default function MyOrganizationUI({
       setLoading(true)
 
       const pin = stableFetchRef.current
+      const storedBn = localStorage.getItem('relinkd_org_bn')
       let q = supabase.from('organizations').select('*')
       if (pin) {
         q = q.eq(pin.column, pin.value)
+      } else if (storedBn) {
+        // Use the BN saved at signup/login to load the right org.
+        q = q.eq('bn', storedBn).limit(1)
       } else {
-        // Same table may omit `id`; `bn` is required in-app and sorts deterministically.
+        // Fallback: grab the first row by BN.
         q = q.order('bn', { ascending: true }).limit(1)
       }
       const { data, error: dbErr } = await q.maybeSingle()
@@ -177,7 +184,7 @@ export default function MyOrganizationUI({
     setForm(prev => ({ ...prev, [e.target.name]: e.target.value }))
   }
 
-  async function handleSubmit(e: FormEvent) {
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
     if (!supabase || !rowFilter) {
       setSaveError('Cannot save: no row identifier returned from the database. Check that your organizations table exposes a primary key (e.g. id).')

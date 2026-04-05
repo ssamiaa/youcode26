@@ -39,7 +39,7 @@ app.post('/api/parse', async (req, res) => {
 
 // Match endpoint - guided conversation + scoring + reasons
 app.post('/api/match', async (req, res) => {
-  const { message, session_id } = req.body
+  const { message, session_id, org_bn } = req.body
 
   if (!message) {
     return res.json({ reply: "Hi! Describe what kind of volunteer help you need." })
@@ -121,6 +121,7 @@ Reply with a single plain sentence (no markdown, no bullet points, no headers) o
     reason: v.match_reason ?? null,
     session_tag: session_tag || null,
     status: 'matched',
+    org_bn: org_bn || null,
   }))
   const { error: insertError } = await supabase.from('matches').insert(rows)
   if (insertError) console.error('matches insert error:', insertError.message)
@@ -248,13 +249,14 @@ app.patch('/api/organization', async (req, res) => {
 })
 
 // Fetch pipeline entries joined with volunteer info
-app.get('/api/pipeline', async (_req, res) => {
+app.get('/api/pipeline', async (req, res) => {
   const supabase = getSupabase()
+  const org_bn = (req.query.org_bn as string) || null
 
-  const { data: matches, error } = await supabase
-    .from('matches')
-    .select('*')
-    .order('created_at', { ascending: false })
+  let q = supabase.from('matches').select('*').order('created_at', { ascending: false })
+  if (org_bn) q = q.eq('org_bn', org_bn)
+
+  const { data: matches, error } = await q
 
   if (error) return res.status(500).json({ error: error.message })
   if (!matches?.length) return res.json([])

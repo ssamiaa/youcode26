@@ -410,6 +410,7 @@
   max-width: 7.5rem;
   position: relative;
   z-index: 1;
+  min-width: 72px;
 }
 
 /* Smaller icons for 6-step bar */
@@ -441,10 +442,10 @@
   box-shadow: 0 0 0 5px rgba(0, 112, 224, 0.1);
 }
 
-.pipeline-step-icon-cell.done .step-icon {
-  border-color: var(--green);
-  color: var(--green);
-  background: rgba(34, 197, 94, 0.1);
+.pipeline-step.done .step-icon {
+  border-color: var(--accent-2);
+  color: var(--accent-2);
+  background: rgba(93, 173, 226, 0.1);
 }
 
 .step-label {
@@ -461,20 +462,23 @@
   width: 100%;
 }
 
-.pipeline-step-label-cell.active .step-label { color: var(--accent); }
-.pipeline-step-label-cell.done   .step-label { color: var(--green); }
+.step-label { display: none; }
+.pipeline-step.active .step-label { color: var(--accent); }
+.pipeline-step.done   .step-label { color: var(--accent-2); }
 
 /* Horizontal segment between 40px icon columns; vertically centered on icons */
 .step-connector {
-  align-self: center;
-  width: 100%;
+  position: absolute;
+  top: 19px;
+  left: 40px;
+  width: 88px;
   height: 2px;
   background: var(--border);
   transition: background 0.4s ease;
 }
 
 .step-connector.filled {
-  background: var(--green);
+  background: var(--accent-2);
 }
 
 /* Pulse animation */
@@ -685,9 +689,9 @@
 }
 
 .badge-aligned {
-  color: var(--green);
-  background: rgba(34, 197, 94, 0.12);
-  border: 1px solid rgba(34, 197, 94, 0.3);
+  color: var(--accent-2);
+  background: rgba(93, 173, 226, 0.12);
+  border: 1px solid rgba(93, 173, 226, 0.3);
 }
 
 .badge-pivoted {
@@ -796,13 +800,13 @@
   gap: 8px;
   font-size: 14px;
   font-weight: 700;
-  color: var(--green);
+  color: var(--accent-2);
 }
 
 .result-badge svg {
   width: 16px;
   height: 16px;
-  stroke: var(--green);
+  stroke: var(--accent-2);
 }
 
 .result-header-pills {
@@ -1353,7 +1357,7 @@
 
 .gallery-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
   gap: 14px;
 }
 
@@ -1361,7 +1365,9 @@
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  overflow: hidden;
+  overflow: visible;
+  display: flex;
+  flex-direction: column;
   transition: border-color 0.2s, transform 0.15s, box-shadow 0.2s;
 }
 
@@ -1377,6 +1383,7 @@
   aspect-ratio: 1;
   overflow: hidden;
   background: var(--bg-elevated);
+  border-radius: var(--radius) var(--radius) 0 0;
 }
 
 .gallery-card-thumb img {

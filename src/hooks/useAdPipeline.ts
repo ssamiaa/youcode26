@@ -522,10 +522,12 @@ async function runHunter(query: string, sector: string): Promise<string> {
 // ─── Phase 3: Observer (Vision) ──────────────────────────────────────────────
 
 async function runObserver(imageUrl: string): Promise<string> {
-  return callClaudeVision(
+  const raw = await callClaudeVision(
     imageUrl,
     'In 1–2 sentences: describe the main subject, setting, dominant mood/lighting, and note which side of the frame has the most open / empty space (left, right, top, or bottom).'
   );
+  // Strip any markdown heading lines (e.g. "# Image Description") the model may prepend
+  return raw.replace(/^#+\s+[^\n]*\n*/g, '').trim();
 }
 
 // ─── Phase 4: Aligner ────────────────────────────────────────────────────────
@@ -933,30 +935,30 @@ export function useAdPipeline() {
       }
     }
 
-    setState({ ...INITIAL_STATE, step: 'blueprint', stepMessage: 'Architecting your campaign...', focusedInsight });
+    setState({ ...INITIAL_STATE, step: 'blueprint', stepMessage: 'Planning your post concept...', focusedInsight });
 
     try {
       const targetAudience = pickTargetAudience(focusedInsight);
       const archetype = pickArchetype();
       const blueprint = await runArchitect(input, focusedInsight, targetAudience, archetype);
-      patch({ blueprint, step: 'sourcing', stepMessage: 'Sourcing imagery from Pexels...' });
+      patch({ blueprint, step: 'sourcing', stepMessage: 'Finding the perfect image...' });
 
       const imageUrl = await runHunter(blueprint.pexelsQuery, input.sector);
-      patch({ imageUrl, step: 'observing', stepMessage: 'Analysing image with vision...' });
+      patch({ imageUrl, step: 'observing', stepMessage: 'Taking a closer look at the image...' });
 
       const imageSummary = await runObserver(imageUrl);
-      patch({ imageSummary, step: 'aligning', stepMessage: 'Aligning idea to image...' });
+      patch({ imageSummary, step: 'aligning', stepMessage: 'Making sure the image fits your message...' });
 
       // When the campaign is anchored to a single outreach insight, the idea
       // is locked — skip the Aligner so it cannot pivot away from it.
       const alignment: AlignmentResult = focusedInsight
-        ? { aligned: true, revisedIdea: blueprint.idea, alignmentNote: 'Insights-anchored campaign — idea locked to anchor insight.' }
+        ? { aligned: true, revisedIdea: blueprint.idea, alignmentNote: 'Your analytics insight was used to guide the post idea.' }
         : await runAligner(blueprint, imageSummary);
-      patch({ alignment, step: 'writing', stepMessage: `Writing copy for ${scrimStyle} layout...` });
+      patch({ alignment, step: 'writing', stepMessage: 'Writing your headline and copy...' });
 
       const profile = pickAdProfile();
       const copyAssets = await runCopywriter(input, blueprint, alignment.revisedIdea, imageSummary, scrimStyle, profile);
-      patch({ copyAssets, step: 'building', stepMessage: 'Assembling final post...' });
+      patch({ copyAssets, step: 'building', stepMessage: 'Putting it all together...' });
 
       const cloudinaryUrl = buildCloudinaryUrl(copyAssets, input, imageUrl);
 
