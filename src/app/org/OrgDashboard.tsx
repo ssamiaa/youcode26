@@ -32,14 +32,17 @@ export default function OrgDashboard() {
   const [sessionId, setSessionId] = useState('')
   const [chatKey, setChatKey] = useState(0)
   const [pipelineRefreshKey, setPipelineRefreshKey] = useState(0)
+  const [connectedIds, setConnectedIds] = useState<Set<string>>(new Set())
 
   function handleNewChat() {
     setChatKey(k => k + 1)
     setVolunteers([])
     setSessionTag('')
+    setConnectedIds(new Set())
   }
 
-  function handleConnect() {
+  function handleConnect(volunteerId: string) {
+    setConnectedIds(prev => new Set(prev).add(volunteerId))
     setPipelineRefreshKey(k => k + 1)
   }
 
@@ -96,10 +99,11 @@ export default function OrgDashboard() {
             sessionTag={sessionTag}
             onNewChat={handleNewChat}
             onConnect={handleConnect}
+            connectedIds={connectedIds}
           />
         </div>
         <div className={tab === 'pipeline' ? 'flex-1 flex flex-col overflow-hidden' : 'hidden'}>
-          <PipelineBoard refreshTrigger={pipelineRefreshKey} />
+          <PipelineBoard refreshTrigger={pipelineRefreshKey} onVolunteerConnected={handleConnect} />
         </div>
         <div className={tab === 'ads' ? 'flex-1 overflow-y-auto' : 'hidden'}>
           <AdPipelineUI onBack={() => setTab('find')} />
@@ -116,10 +120,11 @@ interface FindTabProps {
   onSend: (text: string) => Promise<MatchResult>
   sessionTag: string
   onNewChat: () => void
-  onConnect: () => void
+  onConnect: (volunteerId: string) => void
+  connectedIds: Set<string>
 }
 
-function FindTab({ volunteers, onSend, sessionTag, onNewChat, onConnect }: FindTabProps) {
+function FindTab({ volunteers, onSend, sessionTag, onNewChat, onConnect, connectedIds }: FindTabProps) {
   return (
     <div className="flex-1 overflow-hidden flex flex-col lg:flex-row gap-4 p-4">
 
@@ -156,7 +161,7 @@ function FindTab({ volunteers, onSend, sessionTag, onNewChat, onConnect }: FindT
             </div>
             <ul className="grid grid-cols-1 xl:grid-cols-2 gap-3">
               {volunteers.map(v => (
-                <VolunteerCardItem key={v.volunteer_id} volunteer={v} sessionTag={sessionTag} onConnect={onConnect} />
+                <VolunteerCardItem key={v.volunteer_id} volunteer={v} sessionTag={sessionTag} onConnect={onConnect} connected={connectedIds.has(v.volunteer_id)} />
               ))}
             </ul>
           </>
@@ -169,9 +174,10 @@ function FindTab({ volunteers, onSend, sessionTag, onNewChat, onConnect }: FindT
 
 // ── Volunteer card ────────────────────────────────────────────────────────────
 
-function VolunteerCardItem({ volunteer: v, sessionTag, onConnect }: { volunteer: VolunteerCard; sessionTag: string; onConnect: () => void }) {
+function VolunteerCardItem({ volunteer: v, sessionTag, onConnect, connected: externalConnected }: { volunteer: VolunteerCard; sessionTag: string; onConnect: (volunteerId: string) => void; connected: boolean }) {
   const [connecting, setConnecting] = useState(false)
-  const [connected, setConnected] = useState(false)
+  const [localConnected, setLocalConnected] = useState(false)
+  const connected = externalConnected || localConnected
 
   async function handleConnect() {
     setConnecting(true)
@@ -186,8 +192,8 @@ function VolunteerCardItem({ volunteer: v, sessionTag, onConnect }: { volunteer:
           reason: v.match_reason ?? null,
         }),
       })
-      setConnected(true)
-      onConnect()
+      setLocalConnected(true)
+      onConnect(v.volunteer_id)
     } catch {
       // silently fail — organizer can retry
     } finally {

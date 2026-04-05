@@ -48,5 +48,13 @@ If neighbourhood is not clearly stated, return empty string.`,
 // Remove markdown backticks if Claude added them
 const clean = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
 
-return JSON.parse(clean) as ParsedNeed
+const parsed = JSON.parse(clean)
+return {
+  languages: parsed.languages ?? [],
+  availability: parsed.availability ?? [],
+  neighbourhood: parsed.neighbourhood ?? '',
+  cause_areas: parsed.cause_areas ?? [],
+  skills: parsed.skills ?? [],
+  requires_background_check: parsed.requires_background_check ?? false,
+}
 }
