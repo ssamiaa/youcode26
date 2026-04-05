@@ -2,9 +2,10 @@ import { useState } from 'react'
 import ConversationUI, { type MatchResult } from '../../components/conversation/ConversationUI'
 import PipelineBoard from '../../components/pipeline/PipelineBoard'
 import { AdPipelineUI } from '../../components/AdPipelineUI'
+import AnalyticsUI from '../../components/analytics/AnalyticsUI'
 import ImportCSV from '../../components/ImportCSV'
 
-type Tab = 'find' | 'pipeline' | 'ads'
+type Tab = 'find' | 'pipeline' | 'analytics' | 'ads'
 
 export interface VolunteerCard {
   volunteer_id: string
@@ -34,6 +35,8 @@ export default function OrgDashboard() {
   const [pipelineRefreshKey, setPipelineRefreshKey] = useState(0)
   const [connectedIds, setConnectedIds] = useState<Set<string>>(new Set())
 
+  const [adContext, setAdContext] = useState<string>('')
+
   function handleNewChat() {
     setChatKey(k => k + 1)
     setVolunteers([])
@@ -45,6 +48,11 @@ export default function OrgDashboard() {
   function handleConnect(volunteerId: string) {
     setConnectedIds(prev => new Set(prev).add(volunteerId))
     setPipelineRefreshKey(k => k + 1)
+  }
+
+  const handleCreateAdFromAnalytics = (context: string) => {
+    setAdContext(context)
+    setTab('ads')
   }
 
   async function handleSend(text: string): Promise<MatchResult> {
@@ -73,6 +81,7 @@ export default function OrgDashboard() {
         {([
           { id: 'find',     label: 'Find volunteers' },
           { id: 'pipeline', label: 'Pipeline' },
+        { id: 'analytics', label: 'Analytics' },
           { id: 'ads',      label: 'Ad Generator' },
         ] as { id: Tab; label: string }[]).map(t => (
           <button
@@ -105,6 +114,9 @@ export default function OrgDashboard() {
         </div>
         <div className={tab === 'pipeline' ? 'flex-1 flex flex-col overflow-hidden' : 'hidden'}>
           <PipelineBoard refreshTrigger={pipelineRefreshKey} onVolunteerConnected={handleConnect} />
+        </div>
+        <div className={tab === 'analytics' ? 'flex-1 overflow-y-auto' : 'hidden'}>
+          <AnalyticsUI onCreateAd={handleCreateAdFromAnalytics} />
         </div>
         <div className={tab === 'ads' ? 'flex-1 overflow-y-auto' : 'hidden'}>
           <AdPipelineUI onBack={() => setTab('find')} />
