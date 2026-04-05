@@ -66,9 +66,9 @@ export type LayerTextSource = 'headline' | 'cta' | 'body_excerpt' | 'custom';
  * Impact       – condensed, heavy — punchy hero headlines
  * Georgia      – authoritative serif — legacy/trust campaigns
  * Verdana      – open humanist sans — friendly, community feel
- * Courier_New  – monospace — raw, stats-driven, documentary
+ * Courier      – monospace — raw, stats-driven, documentary
  */
-export type FontFamily = 'Arial' | 'Impact' | 'Georgia' | 'Verdana' | 'Courier_New';
+export type FontFamily = 'Arial' | 'Impact' | 'Georgia' | 'Verdana' | 'Courier';
 
 /**
  * Creative styling per text layer — ONLY what the model should control.
@@ -312,24 +312,31 @@ function decodeModelEscapesInCopy(text: string): string {
 // ─── Phase 1: Architect ───────────────────────────────────────────────────────
 
 async function runArchitect(input: AdInput, focusedInsight: string | null): Promise<PostBlueprint> {
-  const system = `You are a non-profit campaign architect. Produce a creative blueprint.
+  const system = `You are an award-winning non-profit campaign strategist. Find the single sharpest, most emotionally resonant angle — the insight that makes someone stop mid-scroll.
+
 Pick ONE archetype:
-- Skill-Builder: audiences who want to contribute expertise and feel professionally valuable.
-- Community-Seeker: motivated by belonging, local pride, collective impact.
-- Legacy-Maker: driven by a desire to leave something lasting.
-pexelsQuery: 3–5 words describing LITERALLY what should be in the photo. No abstractions.${focusedInsight ? `
-A single outreach data point anchors this campaign. Let it determine the archetype, core idea, and target audience. Do not draw on any other information.` : ''}
+- Skill-Builder: professionals who crave the feeling of their expertise creating undeniable real-world impact — not another CV line, but proof they mattered.
+- Community-Seeker: people driven by deep belonging, neighbourhood pride, and the ache of being part of something larger than themselves.
+- Legacy-Maker: those haunted by what they'll leave behind — for their children, their city, or history.
+
+Rules:
+- "idea" = ONE provocative sentence. Specific, unexpected, human. Ask: "What is the counterintuitive truth about this cause?" Avoid clichés. Never write "make a difference" or "help others."
+- "feeling" = a visceral 2–3 word compound emotion. Not "hope" — "quiet defiance." Not "sad" — "aching solidarity." Not "proud" — "fierce tenderness."
+- "targetAudience" = vivid portrait of ONE real person, not a demographic bucket. Give them a life detail.
+- "pexelsQuery" = 3–5 words describing what the camera LITERALLY sees. Cinematic. A decisive moment. No abstractions, no metaphors.${focusedInsight ? `
+
+A single outreach data point anchors this entire campaign. Let it exclusively determine the archetype, core idea, and target audience. Do not draw on any other information.` : ''}
 RESPOND WITH VALID JSON ONLY.`;
 
   const user = `Blueprint for: ${input.orgName} | ${input.sector} | ${input.location}
 Mission: ${input.mission}
 ${focusedInsight ? `\nAnchor insight (build the entire campaign around this one data point):\n"${focusedInsight}"\n` : ''}
 {
-  "idea": "one-sentence core concept",
-  "feeling": "primary emotion (e.g. 'urgent hope', 'quiet pride')",
-  "targetAudience": "1–2 sentence description",
+  "idea": "one provocative, specific sentence — the counterintuitive truth",
+  "feeling": "visceral 2–3 word compound emotion",
+  "targetAudience": "1–2 sentence vivid portrait of one real person",
   "archetype": "Skill-Builder | Community-Seeker | Legacy-Maker",
-  "pexelsQuery": "3–5 word literal photo description"
+  "pexelsQuery": "3–5 word cinematic literal photo description"
 }`;
 
   return extractJSON<PostBlueprint>(await callClaude(system, user));
@@ -392,12 +399,29 @@ async function runCopywriter(
   scrimStyle: ScrimStyle
 ): Promise<CopyAssets> {
   finalIdea = decodeModelEscapesInCopy(finalIdea);
-  const system = `You are a non-profit copywriter AND visual art director.
+
+  // Archetype-matched colour palettes injected as creative hints.
+  const archetypePalette: Record<AdArchetype, string> = {
+    'Skill-Builder':    'scrim "1b2a4a" deep navy — CTA accent "f59e0b" amber or "10b981" emerald',
+    'Community-Seeker': 'scrim "1a3a22" forest green — CTA accent "fbbf24" gold or "fb923c" warm orange',
+    'Legacy-Maker':     'scrim "2d1b4e" deep violet — CTA accent "e879f9" fuchsia or "f59e0b" warm amber',
+  };
+
+  const system = `You are an award-winning non-profit creative director. Your ads stop people mid-scroll. Every word is deliberate, every colour choice is intentional.
 
 ─── COPY ──────────────────────────────────────────────────────────────────────
-headline: MAX 5 words. Short, active, striking. No end-punctuation.
-body:     2–3 sentences. Org name, one concrete detail (stat/place/outcome), implicit CTA.
-cta:      3–6 words, specific action verb first (e.g. "Give two hours this Saturday").
+headline: MAX 5 words. Think protest sign. Think the thing tattooed on someone's wrist.
+  ✓ GREAT: "Your code feeds families." / "Two hours. One life." / "She waited. You showed up."
+  ✗ WEAK:  "Volunteer With Us Today" / "Make a Difference" / "Join Our Mission"
+
+body: 2–3 punchy sentences. Anchor it with ONE concrete detail — a real number, a real place, a real outcome. Make it ache.
+  ✓ GREAT: "Every Saturday, 40 kids in East Van get their only hot meal — because someone showed up. ${input.orgName} has been that someone since 2009. Now it's your turn."
+  ✗ WEAK:  "Our organization helps people in need through community programs and volunteer support."
+
+cta: 3–6 words. Specific, urgent, intimate. Not a form submit — an invitation.
+  ✓ GREAT: "Bring your lunch hour Friday." / "Say yes this weekend." / "One shift changes everything."
+  ✗ WEAK:  "Sign Up Now" / "Learn More" / "Get Involved"
+
 In headline, body, cta, and customText use a LITERAL comma character — never %2C or other URL escapes.
 
 ─── LAYOUT — CHOSEN: ${scrimStyle} ────────────────────────────────────────────
@@ -406,61 +430,68 @@ ${LAYOUT_SLOT_GUIDES[scrimStyle]}
 The scrimStyle is FIXED — you must echo "${scrimStyle}" unchanged in your JSON.
 Each layer uses one named slot from the list above.
 Do NOT invent slot names outside the list.
+USE ALL OPTIONAL SLOTS — they add depth and professionalism.
 
 ─── CREATIVE CHOICES PER LAYER ────────────────────────────────────────────────
-fontFamily (optional, default "Arial"):
-  "Arial"       — clean, modern, versatile
-  "Impact"      — condensed and heavy (avoid combining with bold=true)
-  "Georgia"     — authoritative serif, trust and legacy
-  "Verdana"     — friendly humanist sans, community-focused
-  "Courier_New" — monospace, raw statistical feel
+fontFamily — choose deliberately to match the feeling:
+  "Impact"      — condensed, raw power. Use for urgent, defiant headlines. Do NOT also set bold=true.
+  "Georgia"     — authoritative serif gravitas. Use for Legacy-Maker or trust-heavy campaigns.
+  "Verdana"     — warm, open, humanist. Use for Community-Seeker or welcoming tones.
+  "Courier"     — documentary rawness. Use for stat-anchored, data-driven copy.
+  "Arial"       — clean fallback. Use when nothing else fits better.
 
-bold / italic: combine freely. Impact is already visually heavy.
+bold / italic: combine freely. Impact ignores bold visually — skip it.
+Italic works beautifully on eyebrow chips and body excerpts.
 
-colorHex: 6-char hex for the text fill.
-  Dark/medium image → "ffffff"   |   Light/washed image → "1a1a2e"
+colorHex: make it sing against the image.
+  Dark/medium image → "ffffff" bright white OR a warm tone like "fef3c7"
+  Light/washed image → "1a1a2e" near-black OR a deep saturated color like "1e3a5f"
+  Never use grey text — it reads as timid.
 
-background (optional): solid colour box BEHIND the text (badge / pill).
-  Use for CTA buttons, eyebrow chips, stat callouts.
-  Always pair with a contrasting colorHex.
-  Accent examples: "f59e0b" amber, "fbbf24" gold, "dc2626" red, "16a34a" green, "2563eb" blue
+background (strongly encouraged for CTA): solid colour box makes the CTA feel like a real button.
+  ALWAYS pair with a high-contrast colorHex.
+  Palette: "f59e0b" amber, "fbbf24" gold, "dc2626" red, "16a34a" green, "2563eb" blue, "7c3aed" violet, "0891b2" teal, "ea580c" burnt orange
 
-backgroundRadius (optional 0–40): 0=rectangle, 8=rounded, 40=pill. Requires background.
+backgroundRadius: 0=sharp rectangle, 8=softly rounded, 40=pill. Pill (40) for CTAs, sharp (0) for eyebrow stat boxes.
 
-opacity: 50–100. Primary text = 100, secondary = 72–85.
+opacity: 100 for headline/cta. 78–88 for body/eyebrow (subtle layering).
 
-scrimColorHex: "000000" default. Brand tints: "1b4332" forest, "1a1a2e" midnight, "7f1d1d" deep red.
-scrimOpacity: 30–80. Higher = busier image.
+─── SCRIM COLOUR ────────────────────────────────────────────────────────────────
+Archetype colour hint for ${blueprint.archetype}: ${archetypePalette[blueprint.archetype]}
+scrimColorHex: BREAK OUT OF BLACK. Use the archetype hint or match the image mood.
+  "1b2a4a" deep navy, "1a3a22" forest, "2d1b4e" deep violet, "7f1d1d" deep red, "0c1a2e" midnight
+scrimOpacity: 45–68. Lower = more image shows through = more drama. Never exceed 72.
 
 RESPOND WITH VALID JSON ONLY — no markdown, no extra fields.`;
 
   const user = `Write the ad for: ${input.orgName} | ${input.sector} | ${input.location}
 Mission: ${input.mission}
 Archetype: ${blueprint.archetype}
+Feeling: ${blueprint.feeling}
 Core Idea: ${finalIdea}
 Image: ${imageSummary}
 
 Return exactly this shape:
 {
-  "headline": "≤5 words",
-  "body": "2–3 sentences",
-  "cta": "3–6 word action phrase",
+  "headline": "≤5 words — bold, specific, unexpected",
+  "body": "2–3 sentences with one concrete anchor detail",
+  "cta": "3–6 word intimate action phrase",
   "builderSpec": {
     "scrimStyle": "${scrimStyle}",
-    "scrimColorHex": "6-char hex",
-    "scrimOpacity": <int 30–80>,
+    "scrimColorHex": "6-char hex — NOT 000000 unless unavoidable",
+    "scrimOpacity": <int 45–68>,
     "layers": [
       {
         "slot": "headline | cta | eyebrow | body",
         "textSource": "headline | cta | body_excerpt | custom",
         "customText": "<only when textSource=custom>",
-        "maxBodyChars": <int 40–90, only when textSource=body_excerpt>,
-        "fontFamily": "Arial | Impact | Georgia | Verdana | Courier_New",
+        "maxBodyChars": <int 50–90, only when textSource=body_excerpt>,
+        "fontFamily": "Arial | Impact | Georgia | Verdana | Courier",
         "bold": <true|false>,
         "italic": <true|false>,
         "colorHex": "6-char hex",
         "opacity": <int 50–100>,
-        "background": "<optional 6-char hex>",
+        "background": "<optional 6-char hex for badge/button>",
         "backgroundRadius": <optional int 0–40>
       }
     ]
@@ -482,7 +513,7 @@ Return exactly this shape:
 
   const validSlots   = LAYOUT_SLOTS[scrimStyle];
   const validSources: LayerTextSource[] = ['headline', 'cta', 'body_excerpt', 'custom'];
-  const validFonts:   FontFamily[]      = ['Arial', 'Impact', 'Georgia', 'Verdana', 'Courier_New'];
+  const validFonts:   FontFamily[]      = ['Arial', 'Impact', 'Georgia', 'Verdana', 'Courier'];
   const validSlotNames                  = Object.keys(validSlots) as SlotName[];
 
   spec.layers = Array.isArray(spec.layers) ? spec.layers : [];
@@ -511,9 +542,15 @@ Return exactly this shape:
     spec.layers.unshift({ slot: 'headline', textSource: 'headline', bold: true, colorHex: 'ffffff', opacity: 100 });
   }
   if (!spec.layers.some(l => l.slot === 'cta')) {
+    const ctaAccents: Record<AdArchetype, string> = {
+      'Skill-Builder':    'f59e0b',
+      'Community-Seeker': 'fbbf24',
+      'Legacy-Maker':     '7c3aed',
+    };
+    const accent = ctaAccents[blueprint.archetype] ?? 'f59e0b';
     spec.layers.push({
       slot: 'cta', textSource: 'cta', bold: true,
-      colorHex: '1a1a2e', opacity: 100, background: 'f59e0b', backgroundRadius: 8,
+      colorHex: '1a1a2e', opacity: 100, background: accent, backgroundRadius: 40,
     });
   }
 
