@@ -20,11 +20,11 @@ interface OrgSignupProps {
   onSubmit?: (data: OrgSignupData) => Promise<void> | void
 }
 
-const PROVINCES = [
+export const PROVINCES = [
   'AB', 'BC', 'MB', 'NB', 'NL', 'NS', 'NT', 'NU', 'ON', 'PE', 'QC', 'SK', 'YT',
 ]
 
-const SECTORS = [
+export const SECTORS = [
   'Arts & Culture',
   'Education',
   'Environment',

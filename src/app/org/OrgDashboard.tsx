@@ -4,8 +4,9 @@ import PipelineBoard from '../../components/pipeline/PipelineBoard'
 import { AdPipelineUI } from '../../components/AdPipelineUI'
 import AnalyticsUI from '../../components/analytics/AnalyticsUI'
 import ImportCSV from '../../components/ImportCSV'
+import MyOrganizationUI from '../../components/org/MyOrganizationUI'
 
-type Tab = 'find' | 'pipeline' | 'analytics' | 'posts'
+type Tab = 'find' | 'pipeline' | 'analytics' | 'posts' | 'organization'
 
 export interface VolunteerCard {
   volunteer_id: string
@@ -40,6 +41,7 @@ export default function OrgDashboard() {
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => () => { if (toastTimer.current) clearTimeout(toastTimer.current) }, [])
+  const [orgRefreshKey, setOrgRefreshKey] = useState(0)
 
   function handleNewChat() {
     setChatKey(k => k + 1)
@@ -87,10 +89,11 @@ export default function OrgDashboard() {
 
       <nav aria-label="Dashboard sections" className="border-b border-[#1A3A52] px-4 flex justify-center gap-0 bg-[#002855]">
         {([
-          { id: 'find',     label: 'Find volunteers' },
-          { id: 'pipeline', label: 'Pipeline' },
-        { id: 'analytics', label: 'Analytics' },
-          { id: 'posts',    label: 'Post Generator' },
+          { id: 'find',          label: 'Find volunteers' },
+          { id: 'pipeline',      label: 'Pipeline' },
+          { id: 'analytics',     label: 'Analytics' },
+          { id: 'posts',         label: 'Post Generator' },
+          { id: 'organization',  label: 'My Organization' },
         ] as { id: Tab; label: string }[]).map(t => (
           <button
             key={t.id}
@@ -131,6 +134,13 @@ export default function OrgDashboard() {
             onBack={() => setTab('find')}
             insightsContext={adContext || undefined}
             onInsightsConsumed={() => setAdContext('')}
+            organizationRefreshKey={orgRefreshKey}
+          />
+        </div>
+        <div className={tab === 'organization' ? 'flex-1 overflow-y-auto flex flex-col min-h-0' : 'hidden'}>
+          <MyOrganizationUI
+            organizationRefreshKey={orgRefreshKey}
+            onSaved={() => setOrgRefreshKey(k => k + 1)}
           />
         </div>
       </main>
