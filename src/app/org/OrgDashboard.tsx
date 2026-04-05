@@ -31,11 +31,16 @@ export default function OrgDashboard() {
   const [sessionTag, setSessionTag] = useState('')
   const [sessionId, setSessionId] = useState('')
   const [chatKey, setChatKey] = useState(0)
+  const [pipelineRefreshKey, setPipelineRefreshKey] = useState(0)
 
   function handleNewChat() {
     setChatKey(k => k + 1)
     setVolunteers([])
     setSessionTag('')
+  }
+
+  function handleConnect() {
+    setPipelineRefreshKey(k => k + 1)
   }
 
   async function handleSend(text: string): Promise<MatchResult> {
@@ -49,6 +54,7 @@ export default function OrgDashboard() {
     if (data.volunteers) setVolunteers(data.volunteers as VolunteerCard[])
     if (data.session_tag) setSessionTag(data.session_tag)
     if (data.session_id) setSessionId(data.session_id)
+    if (data.volunteers?.length) setPipelineRefreshKey(k => k + 1)
     return data
   }
 
@@ -89,10 +95,11 @@ export default function OrgDashboard() {
             onSend={handleSend}
             sessionTag={sessionTag}
             onNewChat={handleNewChat}
+            onConnect={handleConnect}
           />
         </div>
         <div className={tab === 'pipeline' ? 'flex-1 flex flex-col overflow-hidden' : 'hidden'}>
-          <PipelineBoard />
+          <PipelineBoard refreshTrigger={pipelineRefreshKey} />
         </div>
         <div className={tab === 'ads' ? 'flex-1 overflow-y-auto' : 'hidden'}>
           <AdPipelineUI onBack={() => setTab('find')} />
@@ -109,9 +116,10 @@ interface FindTabProps {
   onSend: (text: string) => Promise<MatchResult>
   sessionTag: string
   onNewChat: () => void
+  onConnect: () => void
 }
 
-function FindTab({ volunteers, onSend, sessionTag, onNewChat }: FindTabProps) {
+function FindTab({ volunteers, onSend, sessionTag, onNewChat, onConnect }: FindTabProps) {
   return (
     <div className="flex-1 overflow-hidden flex flex-col lg:flex-row gap-4 p-4">
 
@@ -148,7 +156,7 @@ function FindTab({ volunteers, onSend, sessionTag, onNewChat }: FindTabProps) {
             </div>
             <ul className="grid grid-cols-1 xl:grid-cols-2 gap-3">
               {volunteers.map(v => (
-                <VolunteerCardItem key={v.volunteer_id} volunteer={v} sessionTag={sessionTag} />
+                <VolunteerCardItem key={v.volunteer_id} volunteer={v} sessionTag={sessionTag} onConnect={onConnect} />
               ))}
             </ul>
           </>
@@ -161,7 +169,7 @@ function FindTab({ volunteers, onSend, sessionTag, onNewChat }: FindTabProps) {
 
 // ── Volunteer card ────────────────────────────────────────────────────────────
 
-function VolunteerCardItem({ volunteer: v, sessionTag }: { volunteer: VolunteerCard; sessionTag: string }) {
+function VolunteerCardItem({ volunteer: v, sessionTag, onConnect }: { volunteer: VolunteerCard; sessionTag: string; onConnect: () => void }) {
   const [connecting, setConnecting] = useState(false)
   const [connected, setConnected] = useState(false)
 
@@ -171,9 +179,15 @@ function VolunteerCardItem({ volunteer: v, sessionTag }: { volunteer: VolunteerC
       await fetch('/api/outreach', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ volunteer_id: v.volunteer_id, session_tag: sessionTag }),
+        body: JSON.stringify({
+          volunteer_id: v.volunteer_id,
+          session_tag: sessionTag,
+          score: v.match_score ?? null,
+          reason: v.match_reason ?? null,
+        }),
       })
       setConnected(true)
+      onConnect()
     } catch {
       // silently fail — organizer can retry
     } finally {
@@ -235,7 +249,7 @@ function VolunteerCardItem({ volunteer: v, sessionTag }: { volunteer: VolunteerC
           }`}
         aria-label={`Connect with ${v.first_name} ${v.last_name}`}
       >
-        {connected ? 'Outreach sent' : connecting ? 'Sending…' : 'Connect'}
+        {connected ? 'Connected' : connecting ? 'Connecting…' : 'Connect'}
       </button>
     </li>
   )
