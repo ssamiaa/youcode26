@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, Fragment } from 'react';
 import { useAdPipeline, buildCloudinaryUrl } from '../hooks/useAdPipeline';
 import type { AdInput, PipelineStep, AdArchetype, PostBlueprint, AlignmentResult, CopyAssets, ScrimStyle } from '../hooks/useAdPipeline';
 import { supabase } from '../lib/supabaseClient';
@@ -70,12 +70,12 @@ interface StepDef {
 }
 
 const PIPELINE_STEPS: StepDef[] = [
-  { id: 'blueprint', label: 'Architect', icon: '✦' },
-  { id: 'sourcing',  label: 'Hunter',    icon: '⬡' },
-  { id: 'observing', label: 'Observer',  icon: '◎' },
-  { id: 'aligning',  label: 'Aligner',   icon: '◈' },
-  { id: 'writing',   label: 'Copywriter',icon: '✎' },
-  { id: 'building',  label: 'Builder',   icon: '⬢' },
+  { id: 'blueprint', label: 'Creating post blueprint', icon: '✦' },
+  { id: 'sourcing',  label: 'Sourcing image',    icon: '⬡' },
+  { id: 'observing', label: 'Describing image',  icon: '◎' },
+  { id: 'aligning',  label: 'Aligning goal',   icon: '◈' },
+  { id: 'writing',   label: 'Finalizing format',icon: '✎' },
+  { id: 'building',  label: 'Builder edits',   icon: '⬢' },
 ];
 
 const STEP_ORDER: PipelineStep[] = [
@@ -125,32 +125,55 @@ function PipelineProgress({
           const stepOrdinal = getStepOrdinal(s.id);
           const isActive = step === s.id;
           const isDone   = currentOrdinal > stepOrdinal;
+          const segmentDone = currentOrdinal > stepOrdinal;
+          const iconCol = idx * 2 + 1;
 
-          return (
-            <div
-              key={s.id}
-              className={[
-                'pipeline-step',
-                isActive ? 'active' : '',
-                isDone   ? 'done'   : '',
-              ].filter(Boolean).join(' ')}
-            >
-              <div className="step-icon">
-                {isDone ? (
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                    <polyline points="20 6 9 17 4 12" />
-                  </svg>
-                ) : (
-                  <span>{s.icon}</span>
-                )}
-                {isActive && <span className="pulse-ring" />}
+          const row = (
+            <Fragment key={s.id}>
+              <div
+                className={[
+                  'pipeline-step-icon-cell',
+                  isActive ? 'active' : '',
+                  isDone   ? 'done'   : '',
+                ].filter(Boolean).join(' ')}
+                style={{ gridColumn: iconCol, gridRow: 1 }}
+              >
+                <div className="step-icon">
+                  {isDone ? (
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                      <polyline points="20 6 9 17 4 12" />
+                    </svg>
+                  ) : (
+                    <span>{s.icon}</span>
+                  )}
+                  {isActive && <span className="pulse-ring" />}
+                </div>
               </div>
-              <span className="step-label">{s.label}</span>
               {idx < PIPELINE_STEPS.length - 1 && (
-                <div className={`step-connector ${isDone ? 'filled' : ''}`} />
+                <div
+                  className={`step-connector ${segmentDone ? 'filled' : ''}`}
+                  style={{ gridColumn: iconCol + 1, gridRow: 1 }}
+                  aria-hidden="true"
+                />
               )}
-            </div>
+              <div
+                className={[
+                  'pipeline-step-label-cell',
+                  idx === PIPELINE_STEPS.length - 1 ? 'pipeline-step-label-cell--last' : '',
+                  isActive ? 'active' : '',
+                  isDone   ? 'done'   : '',
+                ].filter(Boolean).join(' ')}
+                style={
+                  idx === PIPELINE_STEPS.length - 1
+                    ? { gridColumn: iconCol, gridRow: 2 }
+                    : { gridColumn: `${iconCol} / span 2`, gridRow: 2 }
+                }
+              >
+                <span className="step-label">{s.label}</span>
+              </div>
+            </Fragment>
           );
+          return row;
         })}
       </div>
 
