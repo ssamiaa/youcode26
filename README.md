@@ -1,4 +1,4 @@
-```
+
 # Relinkd
 
 Relinkd is an end-to-end volunteer management platform for BC nonprofits. A coordinator describes what they need in plain language, Relinkd finds the best matches from a real volunteer database, sends SMS outreach automatically, tracks responses, and uses engagement data to generate targeted social media recruitment posts — all in one platform.
@@ -51,6 +51,5 @@ npx tsx server.ts
 ```bash
 npm run dev
 ```
-
 Open http://localhost:5173
-```
+
