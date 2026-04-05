@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react';
 import { useAdPipeline } from '../hooks/useAdPipeline';
-import type { AdInput, PipelineStep, AdArchetype, PostBlueprint, AlignmentResult, CopyAssets } from '../hooks/useAdPipeline';
+import type { AdInput, PipelineStep, AdArchetype, PostBlueprint, AlignmentResult, CopyAssets, ScrimStyle } from '../hooks/useAdPipeline';
 import './AdPipelineUI.css';
 
 // ─── Step Definitions ────────────────────────────────────────────────────────
@@ -35,6 +35,15 @@ const ARCHETYPE_META: Record<AdArchetype, { color: string; icon: string }> = {
   'Skill-Builder':     { color: '#06b6d4', icon: '⚙' },
   'Community-Seeker':  { color: '#22c55e', icon: '◎' },
   'Legacy-Maker':      { color: '#a855f7', icon: '◆' },
+};
+
+const SCRIM_LABELS: Record<ScrimStyle, string> = {
+  'band-south':  'Band · south',
+  'band-north':  'Band · north',
+  'panel-left':  'Panel · left',
+  'panel-right': 'Panel · right',
+  'full':        'Full overlay',
+  'dual':        'Dual bands',
 };
 
 // ─── Progress Bar ────────────────────────────────────────────────────────────
@@ -168,11 +177,14 @@ function AlignmentCard({ alignment }: { alignment: AlignmentResult }) {
 }
 
 function CopyCard({ copyAssets }: { copyAssets: CopyAssets }) {
+  const spec = copyAssets.builderSpec;
   return (
     <div className="reveal-card reveal-copy-card">
       <div className="reveal-card-header">
         <span className="reveal-phase-label">Copy Ready</span>
-        <span className="placement-pill">{copyAssets.textPlacement} · opacity {copyAssets.scrimOpacity}</span>
+        <span className="placement-pill">
+          {SCRIM_LABELS[spec.scrimStyle]} · {spec.layers.length} layers
+        </span>
       </div>
       <p className="reveal-headline-preview">{copyAssets.headline}</p>
       <p className="reveal-cta-preview">{copyAssets.cta} →</p>
@@ -214,7 +226,7 @@ function AdResult({ cloudinaryUrl, imageUrl, copyAssets, blueprint, imageSummary
             <span>{archetypeMeta.icon}</span>
             {blueprint.archetype}
           </div>
-          <div className="placement-pill">{copyAssets.textPlacement} layout</div>
+          <div className="placement-pill">{SCRIM_LABELS[copyAssets.builderSpec.scrimStyle]}</div>
         </div>
       </div>
 
@@ -262,9 +274,10 @@ function AdResult({ cloudinaryUrl, imageUrl, copyAssets, blueprint, imageSummary
             <div className="copy-block">
               <div className="copy-label">Layout</div>
               <p className="body-text">
-                Placement: <strong>{copyAssets.textPlacement}</strong> ·
-                Scrim: <strong>{copyAssets.scrimOpacity}%</strong> ·
-                Colour: <code className="query-text">#{copyAssets.textColor}</code>
+                Style: <strong>{SCRIM_LABELS[copyAssets.builderSpec.scrimStyle]}</strong> ·
+                Scrim: <strong>{copyAssets.builderSpec.scrimOpacity}%</strong> ·
+                Layers: <strong>{copyAssets.builderSpec.layers.length}</strong> ·
+                Colour: <code className="query-text">#{copyAssets.builderSpec.scrimColorHex}</code>
               </p>
             </div>
           </section>
