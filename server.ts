@@ -97,6 +97,7 @@ Write one sentence (max 25 words) explaining why this is a good match. Be specif
     }]
   })
   const session_tag = tagResponse.content[0].type === 'text' ? tagResponse.content[0].text.trim() : ''
+<<<<<<< HEAD
 
   // Return reply + volunteers + session tag + session id
   return res.json({
@@ -104,6 +105,13 @@ Write one sentence (max 25 words) explaining why this is a good match. Be specif
     volunteers: withReasons,
     session_tag,
     session_id: id
+=======
+  
+  return res.json({
+    reply: `I found ${withReasons.length} great matches for you!`,
+    volunteers: withReasons,
+    session_tag
+>>>>>>> b8cc748481a2553371801f50b9b62aec1a742649
   })
 })
 

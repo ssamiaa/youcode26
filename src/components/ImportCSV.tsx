@@ -96,6 +96,11 @@ export default function ImportCSV() {
 
   async function handleImport() {
     if (rows.length === 0) return
+    if (!supabase) {
+      setStatus('error')
+      setMessage('Supabase is not configured. Add VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY to .env.local.')
+      return
+    }
     setStatus('importing')
     setMessage('')
     const { error } = await supabase.from('volunteers').insert(rows)
@@ -148,6 +153,12 @@ export default function ImportCSV() {
                 <p className="text-xs text-gray-400 mt-0.5">
                   Upload a CSV — columns map to the volunteers table. Separate multi-values with semicolons.
                 </p>
+                {!supabase && (
+                  <p className="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 mt-2">
+                    CSV import needs Supabase: set <code className="font-mono text-[11px]">VITE_SUPABASE_URL</code> and{' '}
+                    <code className="font-mono text-[11px]">VITE_SUPABASE_ANON_KEY</code> in <code className="font-mono text-[11px]">.env.local</code>, then restart the dev server.
+                  </p>
+                )}
               </div>
               <button
                 onClick={handleClose}
@@ -242,7 +253,7 @@ export default function ImportCSV() {
                 <button
                   type="button"
                   onClick={handleImport}
-                  disabled={rows.length === 0 || status === 'importing' || status === 'done'}
+                  disabled={rows.length === 0 || status === 'importing' || status === 'done' || !supabase}
                   className="text-xs px-4 py-2 rounded-xl bg-black text-white font-semibold
                              hover:bg-gray-900 disabled:opacity-40 disabled:cursor-not-allowed
                              transition-colors duration-150"
