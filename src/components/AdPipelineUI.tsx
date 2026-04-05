@@ -1,6 +1,7 @@
-import { useState, type FormEvent } from 'react';
+import { useState, useEffect } from 'react';
 import { useAdPipeline } from '../hooks/useAdPipeline';
 import type { AdInput, PipelineStep, AdArchetype, PostBlueprint, AlignmentResult, CopyAssets, ScrimStyle } from '../hooks/useAdPipeline';
+import { supabase } from '../lib/supabaseClient';
 import './AdPipelineUI.css';
 
 // ─── Step Definitions ────────────────────────────────────────────────────────
@@ -383,77 +384,21 @@ function AdResult({ cloudinaryUrl, imageUrl, copyAssets, blueprint, imageSummary
   );
 }
 
-// ─── Input Form ───────────────────────────────────────────────────────────────
+// ─── Insights Banner ─────────────────────────────────────────────────────────
 
-const SECTORS = [
-  'Animal Welfare', 'Arts & Culture', 'Children & Youth', 'Community Development',
-  'Disability Services', 'Education', 'Environmental', 'Food Security',
-  'Health & Medical', 'Homeless Services', 'Human Rights', 'Mental Health',
-  'Seniors', 'Veterans', 'Women & Families', 'Other',
-];
-
-function InputForm({ onSubmit }: { onSubmit: (input: AdInput) => void }) {
-  const [form, setForm] = useState<AdInput>({
-    orgName: '', sector: '', mission: '', location: '', contact: '',
-  });
-
-  const handleSubmit = (e: FormEvent) => {
-    e.preventDefault();
-    if (form.orgName && form.sector && form.mission && form.location && form.contact) {
-      onSubmit(form);
-    }
-  };
-
-  const set = (field: keyof AdInput) =>
-    (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
-      setForm((prev) => ({ ...prev, [field]: e.target.value }));
-
-  const isValid = !!(form.orgName && form.sector && form.mission && form.location && form.contact);
-
+function InsightsBanner({ context }: { context: string }) {
   return (
-    <form className="input-form" onSubmit={handleSubmit}>
-      <div className="form-grid">
-        <div className="form-group">
-          <label htmlFor="orgName">Organization Name</label>
-          <input id="orgName" type="text" placeholder="e.g. Vancouver Food Bank"
-            value={form.orgName} onChange={set('orgName')} required />
-        </div>
-
-        <div className="form-group">
-          <label htmlFor="sector">Sector</label>
-          <select id="sector" value={form.sector} onChange={set('sector')} required>
-            <option value="" disabled>Select a sector...</option>
-            {SECTORS.map((s) => <option key={s} value={s}>{s}</option>)}
-          </select>
-        </div>
-
-        <div className="form-group full-width">
-          <label htmlFor="mission">Mission Statement</label>
-          <textarea id="mission" rows={3}
-            placeholder="e.g. To eliminate hunger in Metro Vancouver by redistributing surplus food to families in need."
-            value={form.mission} onChange={set('mission')} required />
-        </div>
-
-        <div className="form-group">
-          <label htmlFor="location">Location</label>
-          <input id="location" type="text" placeholder="e.g. Vancouver, BC"
-            value={form.location} onChange={set('location')} required />
-        </div>
-
-        <div className="form-group">
-          <label htmlFor="contact">Contact (email, website, or phone)</label>
-          <input id="contact" type="text" placeholder="e.g. www.foodbank.bc.ca"
-            value={form.contact} onChange={set('contact')} required />
-        </div>
-      </div>
-
-      <button type="submit" className="btn-generate" disabled={!isValid}>
+    <div className="insights-banner">
+      <div className="insights-banner-icon">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+          <path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
         </svg>
-        Generate Ad
-      </button>
-    </form>
+      </div>
+      <div className="insights-banner-body">
+        <div className="insights-banner-label">Ad shaped by outreach insights</div>
+        <p className="insights-banner-text">{context}</p>
+      </div>
+    </div>
   );
 }
 
@@ -461,12 +406,55 @@ function InputForm({ onSubmit }: { onSubmit: (input: AdInput) => void }) {
 
 const ARCH_STRIP = ['Architect', 'Hunter', 'Observer', 'Aligner', 'Copywriter', 'Builder'] as const;
 
-export function AdPipelineUI({ onBack }: { onBack?: () => void } = {}) {
+export function AdPipelineUI({ onBack, insightsContext }: { onBack?: () => void; insightsContext?: string } = {}) {
   const {
     step, stepMessage,
     blueprint, imageUrl, imageSummary, alignment, copyAssets, cloudinaryUrl,
     error, run, reset,
   } = useAdPipeline();
+
+  // ── Fetch org from Supabase ───────────────────────────────────────────────
+  const [orgInput, setOrgInput] = useState<AdInput | null>(null);
+  const [loadingOrg, setLoadingOrg] = useState(true);
+  const [orgFetchError, setOrgFetchError] = useState<string | null>(null);
+  const [mission, setMission] = useState('');
+
+  useEffect(() => {
+    async function fetchOrg() {
+      if (!supabase) {
+        setOrgFetchError('Supabase is not configured. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in .env.local.');
+        setLoadingOrg(false);
+        return;
+      }
+      const { data, error: dbErr } = await supabase
+        .from('organizations')
+        .select('*')
+        .limit(1)
+        .maybeSingle();
+
+      if (dbErr) {
+        setOrgFetchError(`Database error: ${dbErr.message} (code: ${dbErr.code})`);
+        setLoadingOrg(false);
+        return;
+      }
+
+      if (!data) {
+        setOrgFetchError('No organization found. Please register your organization first.');
+        setLoadingOrg(false);
+        return;
+      }
+
+      setOrgInput({
+        orgName:  data.legal_name || data.account_name || 'My Organization',
+        sector:   data.sector    || 'Other',
+        mission:  '',
+        location: [data.city, data.province].filter(Boolean).join(', '),
+        contact:  data.website || data.email || [data.city, data.province].filter(Boolean).join(', '),
+      });
+      setLoadingOrg(false);
+    }
+    fetchOrg();
+  }, []);
 
   const isProcessing = (
     step === 'blueprint' || step === 'sourcing' || step === 'observing' ||
@@ -503,13 +491,68 @@ export function AdPipelineUI({ onBack }: { onBack?: () => void } = {}) {
       </div>
 
       <main className="pipeline-body">
-        {step === 'idle' && <InputForm onSubmit={run} />}
 
+        {/* ── Idle: show Generate button ── */}
+        {step === 'idle' && (
+          loadingOrg ? (
+            <div className="org-loading">
+              <div className="org-loading-spinner" />
+              <p>Loading organization data…</p>
+            </div>
+          ) : orgFetchError ? (
+            <div className="error-view">
+              <div className="error-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <circle cx="12" cy="12" r="10" />
+                  <line x1="12" y1="8" x2="12" y2="12" />
+                  <line x1="12" y1="16" x2="12.01" y2="16" />
+                </svg>
+              </div>
+              <h3>Organization not found</h3>
+              <p className="error-message">{orgFetchError}</p>
+            </div>
+          ) : orgInput && (
+            <div className="generate-view">
+              {insightsContext && <InsightsBanner context={insightsContext} />}
+              <div className="org-card">
+                <div className="org-card-label">Generating for</div>
+                <div className="org-card-name">{orgInput.orgName}</div>
+                <div className="org-card-meta">
+                  <span>{orgInput.sector}</span>
+                  {orgInput.location && <><span className="org-card-dot">·</span><span>{orgInput.location}</span></>}
+                </div>
+              </div>
+              <div className="mission-group">
+                <label htmlFor="mission-input" className="mission-label">
+                  Mission statement <span className="mission-required">required</span>
+                </label>
+                <textarea
+                  id="mission-input"
+                  className="mission-textarea"
+                  rows={3}
+                  placeholder="Briefly describe what your organization does and who it serves…"
+                  value={mission}
+                  onChange={e => setMission(e.target.value)}
+                />
+              </div>
+              <button
+                className="btn-generate"
+                disabled={!mission.trim()}
+                onClick={() => run({ ...orgInput, mission: mission.trim(), insightsContext })}
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+                </svg>
+                Generate Ad
+              </button>
+            </div>
+          )
+        )}
+
+        {/* ── Processing ── */}
         {isProcessing && (
           <div className="processing-view">
             <PipelineProgress step={step} stepMessage={stepMessage} />
-
-            {/* Progressive reveal as each phase completes */}
             <div className="reveal-stream">
               {blueprint  && <BlueprintCard blueprint={blueprint} />}
               {imageUrl   && <ImageCard imageUrl={imageUrl} imageSummary={imageSummary} />}
@@ -519,6 +562,7 @@ export function AdPipelineUI({ onBack }: { onBack?: () => void } = {}) {
           </div>
         )}
 
+        {/* ── Done ── */}
         {step === 'done' && cloudinaryUrl && copyAssets && blueprint && imageUrl && imageSummary && alignment && (
           <AdResult
             cloudinaryUrl={cloudinaryUrl}
@@ -531,6 +575,7 @@ export function AdPipelineUI({ onBack }: { onBack?: () => void } = {}) {
           />
         )}
 
+        {/* ── Error ── */}
         {step === 'error' && (
           <div className="error-view">
             <div className="error-icon">

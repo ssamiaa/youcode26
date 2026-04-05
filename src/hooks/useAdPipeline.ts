@@ -15,6 +15,8 @@ export interface AdInput {
   mission: string;
   location: string;
   contact: string;
+  /** Outreach analytics insights forwarded from the Analytics tab. */
+  insightsContext?: string;
 }
 
 export interface PostBlueprint {
@@ -307,17 +309,20 @@ function decodeModelEscapesInCopy(text: string): string {
 // ─── Phase 1: Architect ───────────────────────────────────────────────────────
 
 async function runArchitect(input: AdInput): Promise<PostBlueprint> {
+  const hasInsights = !!(input.insightsContext?.trim());
+
   const system = `You are a non-profit campaign architect. Produce a creative blueprint.
 Pick ONE archetype:
 - Skill-Builder: audiences who want to contribute expertise and feel professionally valuable.
 - Community-Seeker: motivated by belonging, local pride, collective impact.
 - Legacy-Maker: driven by a desire to leave something lasting.
-pexelsQuery: 3–5 words describing LITERALLY what should be in the photo. No abstractions.
+pexelsQuery: 3–5 words describing LITERALLY what should be in the photo. No abstractions.${hasInsights ? `
+When "Outreach insights" are provided, let the data patterns guide which archetype fits best and what the ad's idea and target audience should emphasise.` : ''}
 RESPOND WITH VALID JSON ONLY.`;
 
   const user = `Blueprint for: ${input.orgName} | ${input.sector} | ${input.location}
 Mission: ${input.mission}
-
+${hasInsights ? `\nOutreach insights from real volunteer engagement data:\n${input.insightsContext}\n` : ''}
 {
   "idea": "one-sentence core concept",
   "feeling": "primary emotion (e.g. 'urgent hope', 'quiet pride')",
@@ -519,8 +524,8 @@ Return exactly this shape:
 function sanitizeForCloudinary(text: string): string {
   return text
     .replace(/\//g, ' ')
-    .replace(/,/g, '%252C')
-    .replace(/\$/g, '%2524')
+    .replace(/,/g, '%2C')
+    .replace(/\$/g, '%24')
     .replace(/'/g, '%27')
     .replace(/!/g, '%21')
     .replace(/\(/g, '%28')
