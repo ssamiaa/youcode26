@@ -575,7 +575,7 @@ export function AdPipelineUI({ insightsContext, onInsightsConsumed }: {
   const {
     step, stepMessage,
     blueprint, imageUrl, imageSummary, alignment, copyAssets, cloudinaryUrl,
-    focusedInsight, error, run, reset,
+    focusedInsight, error, run,
   } = useAdPipeline();
 
   // ── Fetch org from Supabase ───────────────────────────────────────────────
@@ -585,6 +585,7 @@ export function AdPipelineUI({ insightsContext, onInsightsConsumed }: {
 
   // Track which insights string we've already consumed so we never double-fire.
   const consumedInsightRef = useRef<string | null>(null);
+  const topRef = useRef<HTMLDivElement>(null);
 
   // ── Gallery ───────────────────────────────────────────────────────────────
   const [gallery, setGallery] = useState<SavedAd[]>(loadGallery);
@@ -676,8 +677,13 @@ export function AdPipelineUI({ insightsContext, onInsightsConsumed }: {
     step === 'aligning'  || step === 'writing'  || step === 'building'
   );
 
+  function handleRegenerate() {
+    topRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    if (orgInput) run({ ...orgInput, insightsContext });
+  }
+
   return (
-    <div className="ad-pipeline">
+    <div className="ad-pipeline" ref={topRef}>
       <header className="pipeline-header">
         <div className="header-badge">6-AGENT PIPELINE</div>
         <h1>Non-Profit Ad Generator</h1>
@@ -764,7 +770,7 @@ export function AdPipelineUI({ insightsContext, onInsightsConsumed }: {
             imageSummary={imageSummary}
             alignment={alignment}
             focusedInsight={focusedInsight}
-            onReset={reset}
+            onReset={handleRegenerate}
           />
         )}
 
@@ -780,7 +786,7 @@ export function AdPipelineUI({ insightsContext, onInsightsConsumed }: {
             </div>
             <h3>Pipeline Error</h3>
             <p className="error-message">{error}</p>
-            <button className="btn-reset" onClick={reset}>Try Again</button>
+            <button className="btn-reset" onClick={handleRegenerate}>Try Again</button>
           </div>
         )}
       </main>
