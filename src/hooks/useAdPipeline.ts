@@ -527,7 +527,7 @@ Headline font: "${profile.headlineFont}" — FIXED, do not change it.
 ${ctaStyleGuide[profile.ctaStyle]}
 ${profile.includeEyebrow ? eyebrowStyleGuide[profile.eyebrowStyle] : ''}`;
 
-  const system = `You are an award-winning non-profit creative director. Your ads stop people mid-scroll. Every word is deliberate, every colour choice is intentional.
+  const system = `You are an award-winning non-profit creative director. Your posts stop people mid-scroll. Every word is deliberate, every colour choice is intentional.
 
 ─── COPY ──────────────────────────────────────────────────────────────────────
 headline: MAX 5 words. Think protest sign. Think the thing tattooed on someone's wrist.
@@ -581,7 +581,7 @@ scrimOpacity: 45–68. Lower = more image shows through = more drama. Never exce
 
 RESPOND WITH VALID JSON ONLY — no markdown, no extra fields.`;
 
-  const user = `Write the ad for: ${input.orgName} | ${input.sector} | ${input.location}
+  const user = `Write the post for: ${input.orgName} | ${input.sector} | ${input.location}
 Mission: ${input.mission}
 Archetype: ${blueprint.archetype}
 Feeling: ${blueprint.feeling}
@@ -897,12 +897,12 @@ export function useAdPipeline() {
 
       const profile = pickAdProfile();
       const copyAssets = await runCopywriter(input, blueprint, alignment.revisedIdea, imageSummary, scrimStyle, profile);
-      patch({ copyAssets, step: 'building', stepMessage: 'Assembling final ad...' });
+      patch({ copyAssets, step: 'building', stepMessage: 'Assembling final post...' });
 
       const cloudinaryUrl = buildCloudinaryUrl(copyAssets, input, imageUrl);
 
       setState({
-        step: 'done', stepMessage: 'Ad ready!',
+        step: 'done', stepMessage: 'Post ready!',
         blueprint, imageUrl, imageSummary, alignment, copyAssets, cloudinaryUrl,
         focusedInsight, error: null,
       });

@@ -250,7 +250,7 @@ export default function AnalyticsUI({ onCreateAd }: AnalyticsUIProps) {
           )}
 
           {topNeighbourhoods[0] && (
-            <Insight positive text={`${topNeighbourhoods[0].neighbourhood} has the most interested volunteers (${topNeighbourhoods[0].count}) — a strong area for targeted ads.`} />
+            <Insight positive text={`${topNeighbourhoods[0].neighbourhood} has the most interested volunteers (${topNeighbourhoods[0].count}) — a strong area for targeted outreach.`} />
           )}
 
           {sent > 0 && interested === 0 && notInterested === 0 && (
@@ -268,7 +268,7 @@ export default function AnalyticsUI({ onCreateAd }: AnalyticsUIProps) {
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
               <path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
             </svg>
-            Generate targeted ad from insights
+            Generate targeted post from insights
           </button>
         )}
       </div>

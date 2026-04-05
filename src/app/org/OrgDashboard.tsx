@@ -5,7 +5,7 @@ import { AdPipelineUI } from '../../components/AdPipelineUI'
 import AnalyticsUI from '../../components/analytics/AnalyticsUI'
 import ImportCSV from '../../components/ImportCSV'
 
-type Tab = 'find' | 'pipeline' | 'analytics' | 'ads'
+type Tab = 'find' | 'pipeline' | 'analytics' | 'posts'
 
 export interface VolunteerCard {
   volunteer_id: string
@@ -52,7 +52,7 @@ export default function OrgDashboard() {
 
   const handleCreateAdFromAnalytics = (context: string) => {
     setAdContext(context)
-    setTab('ads')
+    setTab('posts')
   }
 
   async function handleSend(text: string): Promise<MatchResult> {
@@ -85,7 +85,7 @@ export default function OrgDashboard() {
           { id: 'find',     label: 'Find volunteers' },
           { id: 'pipeline', label: 'Pipeline' },
         { id: 'analytics', label: 'Analytics' },
-          { id: 'ads',      label: 'Ad Generator' },
+          { id: 'posts',    label: 'Post Generator' },
         ] as { id: Tab; label: string }[]).map(t => (
           <button
             key={t.id}
@@ -121,7 +121,7 @@ export default function OrgDashboard() {
         <div className={tab === 'analytics' ? 'flex-1 overflow-y-auto' : 'hidden'}>
           <AnalyticsUI onCreateAd={handleCreateAdFromAnalytics} />
         </div>
-        <div className={tab === 'ads' ? 'flex-1 overflow-y-auto' : 'hidden'}>
+        <div className={tab === 'posts' ? 'flex-1 overflow-y-auto' : 'hidden'}>
           <AdPipelineUI
             onBack={() => setTab('find')}
             insightsContext={adContext || undefined}

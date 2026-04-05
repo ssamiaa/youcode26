@@ -322,7 +322,7 @@ function AdResult({ cloudinaryUrl, imageUrl, copyAssets, blueprint, imageSummary
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
           </svg>
-          Ad Generated
+          Post Generated
         </div>
           <div className="result-header-pills">
           <div
@@ -348,7 +348,7 @@ function AdResult({ cloudinaryUrl, imageUrl, copyAssets, blueprint, imageSummary
       <div className="result-grid">
         <div className="ad-preview-card">
           <div className="preview-label">
-            Cloudinary Render
+            Post Preview
             {previewUrl !== cloudinaryUrl && (
               <span className="preview-edited-badge">edited</span>
             )}
@@ -356,7 +356,7 @@ function AdResult({ cloudinaryUrl, imageUrl, copyAssets, blueprint, imageSummary
           {(rebuilding || (!imgLoaded && !imgError)) && (
             <div className="img-skeleton">
               <div className="skeleton-shimmer" />
-              <span>{rebuilding ? 'Rebuilding…' : 'Rendering ad...'}</span>
+              <span>{rebuilding ? 'Rebuilding…' : 'Rendering post...'}</span>
             </div>
           )}
           {imgError ? (
@@ -378,7 +378,7 @@ function AdResult({ cloudinaryUrl, imageUrl, copyAssets, blueprint, imageSummary
         <div className="ad-meta">
           <section className="meta-section">
             <div className="meta-section-header">
-              <h3>Ad Copy</h3>
+              <h3>Post Copy</h3>
               <button
                 className={`btn-edit-text${editing ? ' btn-edit-text--active' : ''}`}
                 onClick={handleEditToggle}
@@ -583,14 +583,14 @@ function AdResult({ cloudinaryUrl, imageUrl, copyAssets, blueprint, imageSummary
             <polyline points="7 10 12 15 17 10" />
             <line x1="12" y1="15" x2="12" y2="3" />
           </svg>
-          Save as Image
+          Save Post
         </button>
         <button className="btn-reset" onClick={onReset}>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <polyline points="1 4 1 10 7 10" />
             <path d="M3.51 15a9 9 0 1 0 .49-4.95" />
           </svg>
-          Generate Another
+          Generate Another Post
         </button>
       </div>
     </div>
@@ -651,7 +651,7 @@ function EditModal({ ad, onClose, onSave }: EditModalProps) {
     <div className="edit-modal-overlay" onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
       <div className="edit-modal">
         <div className="edit-modal-header">
-          <h3>Edit Ad</h3>
+          <h3>Edit Post</h3>
           <button className="edit-modal-close" onClick={onClose} aria-label="Close">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
@@ -824,7 +824,7 @@ function AdGallery({
             <circle cx="8.5" cy="8.5" r="1.5" />
             <polyline points="21 15 16 10 5 21" />
           </svg>
-          Previously Generated
+          Previously Created
         </span>
         <span className="gallery-count">{gallery.length} / {GALLERY_MAX}</span>
       </div>
@@ -986,11 +986,11 @@ export function AdPipelineUI({ insightsContext, onInsightsConsumed }: {
     <div className="ad-pipeline" ref={topRef}>
       <header className="pipeline-header">
         <div className="header-badge">6-AGENT PIPELINE</div>
-        <h1>Non-Profit Ad Generator</h1>
+        <h1>Non-Profit Post Generator</h1>
         <p>
           Six AI agents collaborate — an Architect blueprints the campaign, a Hunter sources imagery,
-          an Observer analyses it with vision, an Aligner pivots the idea if needed, a Copywriter
-          crafts the copy, and a Builder composes the final creative.
+          an Observer analyses it with vision, an Aligner refines the idea if needed, a Copywriter
+          crafts the copy, and a Builder composes the final post.
         </p>
       </header>
 
@@ -1041,7 +1041,7 @@ export function AdPipelineUI({ insightsContext, onInsightsConsumed }: {
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
                 </svg>
-                Generate Ad
+                Generate Post
               </button>
             </div>
           )
