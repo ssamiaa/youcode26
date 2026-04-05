@@ -1,3 +1,6 @@
+This already looks great! Here's a slightly improved version with better spacing and a tech stack section added:
+
+```
 # Relinkd
 
 Relinkd is an end-to-end volunteer management platform for BC nonprofits. A coordinator describes what they need in plain language, Relinkd finds the best matches from a real volunteer database, sends SMS outreach automatically, tracks responses, and uses engagement data to generate targeted social media recruitment posts — all in one platform.
@@ -8,6 +11,15 @@ Relinkd is an end-to-end volunteer management platform for BC nonprofits. A coor
 - **SMS outreach** — hit Connect and the volunteer gets a text immediately. They reply YES or NO and the status updates automatically
 - **Pipeline tracker** — see every match tracked from outreach to confirmed in one place
 - **Ad generator** — pipeline data identifies your volunteer gaps and generates targeted social media recruitment posts based on your organization's website
+
+## Tech Stack
+
+- **Frontend** — React, TypeScript, Vite, Tailwind CSS
+- **AI** — Claude Haiku (Anthropic)
+- **Database** — Supabase (PostgreSQL)
+- **SMS** — Twilio
+- **Analytics** — SAP BTP
+- **Deployment** — Vercel
 
 ## Getting Started
 
@@ -43,3 +55,4 @@ npm run dev
 ```
 
 Open http://localhost:5173
+```
