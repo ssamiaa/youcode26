@@ -1,9 +1,10 @@
 import { useState } from 'react'
 import ConversationUI, { type MatchResult } from '../../components/conversation/ConversationUI'
 import PipelineBoard from '../../components/pipeline/PipelineBoard'
+import { AdPipelineUI } from '../../components/AdPipelineUI'
 import ImportCSV from '../../components/ImportCSV'
 
-type Tab = 'find' | 'pipeline'
+type Tab = 'find' | 'pipeline' | 'ads'
 
 export interface VolunteerCard {
   volunteer_id: string
@@ -53,6 +54,7 @@ export default function OrgDashboard() {
         {([
           { id: 'find',     label: 'Find volunteers' },
           { id: 'pipeline', label: 'Pipeline' },
+          { id: 'ads',      label: 'Ad Generator' },
         ] as { id: Tab; label: string }[]).map(t => (
           <button
             key={t.id}
@@ -79,6 +81,11 @@ export default function OrgDashboard() {
           />
         )}
         {tab === 'pipeline' && <PipelineBoard />}
+        {tab === 'ads' && (
+          <div className="flex-1 overflow-y-auto">
+            <AdPipelineUI onBack={() => setTab('find')} />
+          </div>
+        )}
       </main>
     </div>
   )
