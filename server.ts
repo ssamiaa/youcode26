@@ -1,10 +1,11 @@
 import dotenv from 'dotenv'
-dotenv.config({ path: '.env.local' })
+dotenv.config({ path: '.env' })
 import express from 'express'
 import cors from 'cors'
 import { parseNeed } from './lib/ai/parseNeed.js'
 import { scoreAndMatch } from './lib/matching/score.js'
 import Anthropic from '@anthropic-ai/sdk'
+import twilio from 'twilio'
 import { createClient } from '@supabase/supabase-js'
 
 function getSupabase() {
@@ -15,6 +16,9 @@ function getSupabase() {
 const app = express()
 app.use(cors())
 app.use(express.json())
+app.use(express.urlencoded({ extended: false }))
+
+const twilioClient = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN)
 
 console.log('starting server...')
 console.log('SUPABASE URL:', process.env.VITE_SUPABASE_URL)
@@ -126,28 +130,67 @@ Reply with a single plain sentence (no markdown, no bullet points, no headers) o
     session_tag,
     session_id: id
   })
+
 })
 
-// Mark a matched volunteer as 'sent'
+// Send outreach SMS and update match status to 'sent'
 app.post('/api/outreach', async (req, res) => {
-  const { id, volunteer_id, session_tag } = req.body
-
+  const { volunteer_id, session_tag } = req.body
   const supabase = getSupabase()
 
-  // If we have the exact match row id, use it; otherwise fall back to volunteer+session filter
-  let query = supabase.from('matches').update({ status: 'sent' })
-  if (id) {
-    query = query.eq('id', id)
+  const { data: volunteer } = await supabase
+    .from('volunteers')
+    .select('first_name, last_name, phone')
+    .eq('volunteer_id', volunteer_id)
+    .single()
+
+  if (!volunteer) return res.status(404).json({ error: 'Volunteer not found' })
+
+  const { data: match, error: matchError } = await supabase
+    .from('matches')
+    .update({ status: 'sent' })
+    .eq('volunteer_id', volunteer_id)
+    .eq('session_tag', session_tag)
+    .select('id')
+    .single()
+
+  console.log('outreach match update:', match, matchError)
+
+  await twilioClient.messages.create({
+    body: `Hi ${volunteer.first_name}! An organization needs your help. Interested? Reply YES or NO.`,
+    from: process.env.TWILIO_PHONE_NUMBER,
+    to: volunteer.phone ?? process.env.MY_PHONE_NUMBER!
+  })
+
+  res.json({ success: true, match_id: match?.id })
+})
+
+// Twilio webhook — handle YES/NO replies
+app.post('/api/webhook', async (req, res) => {
+  const body = (req.body.Body as string)?.trim().toUpperCase()
+  const supabase = getSupabase()
+
+  const { data: match, error: webhookError } = await supabase
+    .from('matches')
+    .select('id')
+    .eq('status', 'sent')
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .single()
+
+  console.log('webhook match lookup:', match, webhookError)
+
+  let responseText = ''
+  if (body === 'YES') {
+    if (match) await supabase.from('matches').update({ status: 'interested' }).eq('id', match.id)
+    responseText = `Great, thank you! We'll be in touch shortly.`
   } else {
-    if (!volunteer_id) return res.status(400).json({ error: 'id or volunteer_id required' })
-    query = query.eq('volunteer_id', volunteer_id)
-    if (session_tag != null) query = query.eq('session_tag', session_tag)
+    if (match) await supabase.from('matches').update({ status: 'not_interested' }).eq('id', match.id)
+    responseText = `No worries, thank you for letting us know!`
   }
 
-  const { error } = await query
-
-  if (error) return res.status(500).json({ error: error.message })
-  return res.json({ ok: true })
+  res.type('text/xml').send(`<?xml version="1.0" encoding="UTF-8"?>
+<Response><Message>${responseText}</Message></Response>`)
 })
 
 // Fetch pipeline entries joined with volunteer info
