@@ -2,12 +2,12 @@ import { useState } from 'react'
 import ConversationUI, { type MatchResult } from '../../components/conversation/ConversationUI'
 import PipelineBoard from '../../components/pipeline/PipelineBoard'
 import { AdPipelineUI } from '../../components/AdPipelineUI'
+import ImportCSV from '../../components/ImportCSV'
 
 type Tab = 'find' | 'pipeline' | 'ads'
 
-// Volunteer result shape — matches volunteers table + match engine fields
 export interface VolunteerCard {
-  volunteer_ID: string
+  volunteer_id: string
   first_name: string
   last_name: string
   age?: number
@@ -20,35 +20,36 @@ export interface VolunteerCard {
   prior_volunteer_experience?: boolean
   has_vehicle?: boolean
   background_check_status?: string
-  // Populated by /api/match
-  match_score?: number       // 0–100
-  match_reason?: string      // plain-language explanation
+  phone?: string
+  match_score?: number
+  match_reason?: string
 }
 
 export default function OrgDashboard() {
   const [tab, setTab] = useState<Tab>('find')
   const [volunteers, setVolunteers] = useState<VolunteerCard[]>([])
+  const [sessionTag, setSessionTag] = useState('')
 
   async function handleSend(text: string): Promise<MatchResult> {
     const res = await fetch('/api/match', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message: text }),
+      body: JSON.stringify({ message: text, session_tag: sessionTag }),
     })
     if (!res.ok) throw new Error(`Server error: ${res.status}`)
     const data: MatchResult = await res.json()
     if (data.volunteers) setVolunteers(data.volunteers as VolunteerCard[])
+    if (data.session_tag) setSessionTag(data.session_tag)
     return data
   }
 
   return (
     <div className="min-h-screen bg-white flex flex-col">
-      {/* Top bar */}
-      <header className="border-b border-gray-200 px-4 py-3">
+      <header className="border-b border-gray-200 px-4 py-3 flex items-center justify-between">
         <p className="text-xs font-bold tracking-widest text-gray-400 uppercase">Organizer</p>
+        <ImportCSV />
       </header>
 
-      {/* Tabs */}
       <nav aria-label="Dashboard sections" className="border-b border-gray-200 px-4 flex gap-0">
         {([
           { id: 'find',     label: 'Find volunteers' },
@@ -71,14 +72,15 @@ export default function OrgDashboard() {
         ))}
       </nav>
 
-      {/* Tab content */}
       <main className="flex-1 flex flex-col overflow-hidden">
         {tab === 'find' && (
-          <FindTab volunteers={volunteers} onSend={handleSend} />
+          <FindTab
+            volunteers={volunteers}
+            onSend={handleSend}
+            sessionTag={sessionTag}
+          />
         )}
-        {tab === 'pipeline' && (
-          <PipelineBoard />
-        )}
+        {tab === 'pipeline' && <PipelineBoard />}
         {tab === 'ads' && (
           <div className="flex-1 overflow-y-auto">
             <AdPipelineUI onBack={() => setTab('find')} />
@@ -89,14 +91,15 @@ export default function OrgDashboard() {
   )
 }
 
-// ── Find tab ────────────────────────────────────────────────────────────────
+// ── Find tab ─────────────────────────────────────────────────────────────────
 
 interface FindTabProps {
   volunteers: VolunteerCard[]
   onSend: (text: string) => Promise<MatchResult>
+  sessionTag: string
 }
 
-function FindTab({ volunteers, onSend }: FindTabProps) {
+function FindTab({ volunteers, onSend, sessionTag }: FindTabProps) {
   return (
     <div className="flex-1 overflow-hidden flex flex-col lg:flex-row gap-4 p-4">
 
@@ -104,17 +107,17 @@ function FindTab({ volunteers, onSend }: FindTabProps) {
       <section
         aria-label="Find volunteers by conversation"
         className="flex-shrink-0 rounded-2xl border border-gray-200 overflow-hidden shadow-sm
-                   flex flex-col
-                   h-[420px] lg:h-auto lg:w-[520px]"
+                   flex flex-col h-[460px] lg:h-auto lg:w-[520px]"
       >
-        <ConversationUI onSendMessage={onSend} />
+        <div className="flex-1 min-h-0 flex flex-col">
+          <ConversationUI onSendMessage={onSend} />
+        </div>
       </section>
 
       {/* Right — results card */}
       <section
         aria-label="Matched volunteers"
-        className="flex-1 rounded-2xl border border-gray-200 shadow-sm overflow-y-auto p-5
-                   min-h-[200px]"
+        className="flex-1 rounded-2xl border border-gray-200 shadow-sm overflow-y-auto p-5 min-h-[200px]"
       >
         {volunteers.length === 0 ? (
           <div className="h-full flex items-center justify-center">
@@ -124,12 +127,19 @@ function FindTab({ volunteers, onSend }: FindTabProps) {
           </div>
         ) : (
           <>
-            <h2 className="text-sm font-bold text-black mb-4">
-              {volunteers.length} match{volunteers.length !== 1 ? 'es' : ''} found
-            </h2>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-sm font-bold text-black">
+                {volunteers.length} match{volunteers.length !== 1 ? 'es' : ''} found
+              </h2>
+              {sessionTag && (
+                <span className="text-xs border border-gray-300 text-gray-600 px-2 py-0.5 rounded-full">
+                  {sessionTag}
+                </span>
+              )}
+            </div>
             <ul className="grid grid-cols-1 xl:grid-cols-2 gap-3">
               {volunteers.map(v => (
-                <VolunteerCardItem key={v.volunteer_ID} volunteer={v} />
+                <VolunteerCardItem key={v.volunteer_id} volunteer={v} sessionTag={sessionTag} />
               ))}
             </ul>
           </>
@@ -140,9 +150,9 @@ function FindTab({ volunteers, onSend }: FindTabProps) {
   )
 }
 
-// ── Volunteer card ───────────────────────────────────────────────────────────
+// ── Volunteer card ────────────────────────────────────────────────────────────
 
-function VolunteerCardItem({ volunteer: v }: { volunteer: VolunteerCard }) {
+function VolunteerCardItem({ volunteer: v, sessionTag }: { volunteer: VolunteerCard; sessionTag: string }) {
   const [connecting, setConnecting] = useState(false)
   const [connected, setConnected] = useState(false)
 
@@ -152,7 +162,7 @@ function VolunteerCardItem({ volunteer: v }: { volunteer: VolunteerCard }) {
       await fetch('/api/outreach', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ volunteer_ID: v.volunteer_ID }),
+        body: JSON.stringify({ volunteer_id: v.volunteer_id, session_tag: sessionTag }),
       })
       setConnected(true)
     } catch {
@@ -164,7 +174,6 @@ function VolunteerCardItem({ volunteer: v }: { volunteer: VolunteerCard }) {
 
   return (
     <li className="border border-gray-200 rounded-2xl p-4 flex flex-col gap-3">
-      {/* Header row: name + match score */}
       <div className="flex items-start justify-between gap-2">
         <p className="font-semibold text-sm text-black">{v.first_name} {v.last_name}</p>
         {v.match_score != null && (
@@ -177,19 +186,16 @@ function VolunteerCardItem({ volunteer: v }: { volunteer: VolunteerCard }) {
         )}
       </div>
 
-      {/* Plain-language match reason */}
       {v.match_reason && (
         <p className="text-xs text-gray-600 leading-relaxed">{v.match_reason}</p>
       )}
 
-      {/* Key details */}
       <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-gray-500">
         <span>{v.neighbourhood}</span>
         {v.availability && <span>{v.availability}</span>}
         {v.hours_available_per_month && <span>{v.hours_available_per_month}h/mo</span>}
       </div>
 
-      {/* Tags */}
       <div className="flex flex-wrap gap-1.5">
         {v.skills?.map(s => (
           <span key={s} className="text-xs bg-gray-100 text-black px-2 py-0.5 rounded-full">{s}</span>
@@ -207,7 +213,6 @@ function VolunteerCardItem({ volunteer: v }: { volunteer: VolunteerCard }) {
         )}
       </div>
 
-      {/* Connect button */}
       <button
         type="button"
         onClick={handleConnect}
@@ -226,4 +231,3 @@ function VolunteerCardItem({ volunteer: v }: { volunteer: VolunteerCard }) {
     </li>
   )
 }
-

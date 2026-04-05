@@ -9,6 +9,7 @@ export interface Message {
 export interface MatchResult {
   reply: string
   volunteers?: unknown[]
+  session_tag?: string
 }
 
 interface ConversationUIProps {
