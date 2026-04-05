@@ -29,22 +29,31 @@ export default function OrgDashboard() {
   const [tab, setTab] = useState<Tab>('find')
   const [volunteers, setVolunteers] = useState<VolunteerCard[]>([])
   const [sessionTag, setSessionTag] = useState('')
+  const [sessionId, setSessionId] = useState('')
+  const [chatKey, setChatKey] = useState(0)
+
+  function handleNewChat() {
+    setChatKey(k => k + 1)
+    setVolunteers([])
+    setSessionTag('')
+  }
 
   async function handleSend(text: string): Promise<MatchResult> {
     const res = await fetch('/api/match', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message: text, session_tag: sessionTag }),
+      body: JSON.stringify({ message: text, session_tag: sessionTag, session_id: sessionId }),
     })
     if (!res.ok) throw new Error(`Server error: ${res.status}`)
     const data: MatchResult = await res.json()
     if (data.volunteers) setVolunteers(data.volunteers as VolunteerCard[])
     if (data.session_tag) setSessionTag(data.session_tag)
+    if (data.session_id) setSessionId(data.session_id)
     return data
   }
 
   return (
-    <div className="min-h-screen bg-white flex flex-col">
+    <div className="h-screen bg-white flex flex-col overflow-hidden">
       <header className="border-b border-gray-200 px-4 py-3 flex items-center justify-between">
         <p className="text-xs font-bold tracking-widest text-gray-400 uppercase">Organizer</p>
         <ImportCSV />
@@ -73,19 +82,21 @@ export default function OrgDashboard() {
       </nav>
 
       <main className="flex-1 flex flex-col overflow-hidden">
-        {tab === 'find' && (
+        <div className={tab === 'find' ? 'flex-1 flex flex-col overflow-hidden' : 'hidden'}>
           <FindTab
+            key={chatKey}
             volunteers={volunteers}
             onSend={handleSend}
             sessionTag={sessionTag}
+            onNewChat={handleNewChat}
           />
-        )}
-        {tab === 'pipeline' && <PipelineBoard />}
-        {tab === 'ads' && (
-          <div className="flex-1 overflow-y-auto">
-            <AdPipelineUI onBack={() => setTab('find')} />
-          </div>
-        )}
+        </div>
+        <div className={tab === 'pipeline' ? 'flex-1 flex flex-col overflow-hidden' : 'hidden'}>
+          <PipelineBoard />
+        </div>
+        <div className={tab === 'ads' ? 'flex-1 overflow-y-auto' : 'hidden'}>
+          <AdPipelineUI onBack={() => setTab('find')} />
+        </div>
       </main>
     </div>
   )
@@ -97,27 +108,25 @@ interface FindTabProps {
   volunteers: VolunteerCard[]
   onSend: (text: string) => Promise<MatchResult>
   sessionTag: string
+  onNewChat: () => void
 }
 
-function FindTab({ volunteers, onSend, sessionTag }: FindTabProps) {
+function FindTab({ volunteers, onSend, sessionTag, onNewChat }: FindTabProps) {
   return (
     <div className="flex-1 overflow-hidden flex flex-col lg:flex-row gap-4 p-4">
 
       {/* Left — conversation card */}
       <section
         aria-label="Find volunteers by conversation"
-        className="flex-shrink-0 rounded-2xl border border-gray-200 overflow-hidden shadow-sm
-                   flex flex-col h-[460px] lg:h-auto lg:w-[520px]"
+        className="flex-1 min-h-0 lg:flex-none lg:w-[520px] rounded-2xl border border-gray-200 overflow-hidden shadow-sm flex flex-col"
       >
-        <div className="flex-1 min-h-0 flex flex-col">
-          <ConversationUI onSendMessage={onSend} />
-        </div>
+        <ConversationUI onSendMessage={onSend} onNewChat={onNewChat} />
       </section>
 
       {/* Right — results card */}
       <section
         aria-label="Matched volunteers"
-        className="flex-1 rounded-2xl border border-gray-200 shadow-sm overflow-y-auto p-5 min-h-[200px]"
+        className="flex-1 min-h-0 rounded-2xl border border-gray-200 shadow-sm overflow-y-auto p-5"
       >
         {volunteers.length === 0 ? (
           <div className="h-full flex items-center justify-center">
@@ -128,7 +137,7 @@ function FindTab({ volunteers, onSend, sessionTag }: FindTabProps) {
         ) : (
           <>
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-sm font-bold text-black">
+              <h2 className="text-sm font-bold !text-black">
                 {volunteers.length} match{volunteers.length !== 1 ? 'es' : ''} found
               </h2>
               {sessionTag && (
