@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import ConversationUI, { type MatchResult } from '../../components/conversation/ConversationUI'
 import PipelineBoard from '../../components/pipeline/PipelineBoard'
 import { AdPipelineUI } from '../../components/AdPipelineUI'
@@ -36,6 +36,10 @@ export default function OrgDashboard() {
   const [connectedIds, setConnectedIds] = useState<Set<string>>(new Set())
 
   const [adContext, setAdContext] = useState<string>('')
+  const [showToast, setShowToast] = useState(false)
+  const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(() => () => { if (toastTimer.current) clearTimeout(toastTimer.current) }, [])
 
   function handleNewChat() {
     setChatKey(k => k + 1)
@@ -48,6 +52,9 @@ export default function OrgDashboard() {
   function handleConnect(volunteerId: string) {
     setConnectedIds(prev => new Set(prev).add(volunteerId))
     setPipelineRefreshKey(k => k + 1)
+    setShowToast(true)
+    if (toastTimer.current) clearTimeout(toastTimer.current)
+    toastTimer.current = setTimeout(() => setShowToast(false), 5000)
   }
 
   const handleCreateAdFromAnalytics = (context: string) => {
@@ -73,10 +80,8 @@ export default function OrgDashboard() {
   return (
     <div className="h-screen bg-[#002855] flex flex-col overflow-hidden">
       <header className="border-b border-[#1A3A52] px-4 py-3 flex items-center justify-between bg-[#002855]">
-        <div className="flex flex-col items-start">
-          <img src="/logo.png" alt="Relinkd logo" className="h-16 w-16 rounded-xl object-contain" />
-          <span className="text-sm font-bold text-white tracking-tight mt-1">Relinkd</span>
-        </div>
+        {/* <img src="/logo.png" alt="Relinkd logo" className="h-16 w-16 rounded-xl object-contain" /> */}
+        <p className="text-3xl font-bold tracking-widest text-[#8B9DB5] uppercase">Relinkd</p>
         <ImportCSV />
       </header>
 
@@ -129,6 +134,31 @@ export default function OrgDashboard() {
           />
         </div>
       </main>
+
+      {/* Connect toast */}
+      <div
+        aria-live="polite"
+        className={`fixed bottom-5 left-1/2 -translate-x-1/2 z-50 transition-all duration-300
+          ${showToast ? 'opacity-100 translate-y-0 pointer-events-auto' : 'opacity-0 translate-y-3 pointer-events-none'}`}
+      >
+        <div className="flex items-center gap-3 bg-[#1A3A52] border border-[#0070E0] rounded-2xl px-4 py-3 shadow-xl">
+          <div className="flex-shrink-0 w-2 h-2 rounded-full bg-[#5DADE2] animate-pulse" />
+          <p className="text-sm text-white">Outreach sent!</p>
+          <button
+            onClick={() => { setShowToast(false); setTab('pipeline') }}
+            className="ml-1 text-sm font-semibold text-[#5DADE2] hover:text-white transition-colors whitespace-nowrap"
+          >
+            View in Pipeline →
+          </button>
+          <button
+            onClick={() => setShowToast(false)}
+            aria-label="Dismiss"
+            className="ml-1 text-[#4A7BA7] hover:text-white transition-colors"
+          >
+            <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M3.72 3.72a.75.75 0 0 1 1.06 0L8 6.94l3.22-3.22a.75.75 0 1 1 1.06 1.06L9.06 8l3.22 3.22a.75.75 0 1 1-1.06 1.06L8 9.06l-3.22 3.22a.75.75 0 0 1-1.06-1.06L6.94 8 3.72 4.78a.75.75 0 0 1 0-1.06Z"/></svg>
+          </button>
+        </div>
+      </div>
     </div>
   )
 }
@@ -222,51 +252,55 @@ function VolunteerCardItem({ volunteer: v, sessionTag, onConnect, connected: ext
   }
 
   return (
-    <li className="border border-[#A9CEE8] rounded-2xl p-4 flex flex-col gap-3 bg-white">
-      <div className="flex items-start justify-between gap-2">
-        <p className="font-semibold text-sm text-[#2C3E50]">{v.first_name} {v.last_name}</p>
-        {v.match_score != null && (
-          <span
-            className="text-xs font-bold tabular-nums text-white bg-[#0070E0] px-2 py-0.5 rounded-full flex-shrink-0"
-            aria-label={`Match score ${v.match_score} out of 100`}
-          >
-            {v.match_score}%
-          </span>
+    <li className="border border-[#A9CEE8] rounded-2xl p-4 flex flex-col bg-white">
+      {/* Content grows to fill space */}
+      <div className="flex-1 flex flex-col gap-3">
+        <div className="flex items-start justify-between gap-2">
+          <p className="font-semibold text-sm text-[#2C3E50]">{v.first_name} {v.last_name}</p>
+          {v.match_score != null && (
+            <span
+              className="text-xs font-bold tabular-nums text-white bg-[#0070E0] px-2 py-0.5 rounded-full flex-shrink-0"
+              aria-label={`Match score ${v.match_score} out of 100`}
+            >
+              {v.match_score}%
+            </span>
+          )}
+        </div>
+
+        {v.match_reason && (
+          <p className="text-xs text-[#4A7BA7] leading-relaxed">{v.match_reason}</p>
         )}
+
+        <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-[#4A7BA7]">
+          <span>{v.neighbourhood}</span>
+          {v.availability && <span>{v.availability}</span>}
+          {v.hours_available_per_month && <span>{v.hours_available_per_month}h/mo</span>}
+        </div>
+
+        <div className="flex flex-wrap gap-1.5">
+          {v.skills?.map(s => (
+            <span key={s} className="text-xs bg-[#F5F7FA] text-[#002855] px-2 py-0.5 rounded-full">{s}</span>
+          ))}
+          {v.languages_spoken?.filter((_, i) => i > 0 || (v.languages_spoken?.length ?? 0) > 1).map(l => (
+            <span key={l} className="text-xs border border-[#A9CEE8] text-[#4A7BA7] px-2 py-0.5 rounded-full">{l}</span>
+          ))}
+          {v.background_check_status && (
+            <span className="text-xs border border-[#A9CEE8] text-[#4A7BA7] px-2 py-0.5 rounded-full">
+              {v.background_check_status}
+            </span>
+          )}
+          {v.has_vehicle && (
+            <span className="text-xs border border-[#A9CEE8] text-[#4A7BA7] px-2 py-0.5 rounded-full">Has vehicle</span>
+          )}
+        </div>
       </div>
 
-      {v.match_reason && (
-        <p className="text-xs text-[#4A7BA7] leading-relaxed">{v.match_reason}</p>
-      )}
-
-      <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-[#4A7BA7]">
-        <span>{v.neighbourhood}</span>
-        {v.availability && <span>{v.availability}</span>}
-        {v.hours_available_per_month && <span>{v.hours_available_per_month}h/mo</span>}
-      </div>
-
-      <div className="flex flex-wrap gap-1.5">
-        {v.skills?.map(s => (
-          <span key={s} className="text-xs bg-[#F5F7FA] text-[#002855] px-2 py-0.5 rounded-full">{s}</span>
-        ))}
-        {v.languages_spoken?.filter((_, i) => i > 0 || (v.languages_spoken?.length ?? 0) > 1).map(l => (
-          <span key={l} className="text-xs border border-[#A9CEE8] text-[#4A7BA7] px-2 py-0.5 rounded-full">{l}</span>
-        ))}
-        {v.background_check_status && (
-          <span className="text-xs border border-[#A9CEE8] text-[#4A7BA7] px-2 py-0.5 rounded-full">
-            {v.background_check_status}
-          </span>
-        )}
-        {v.has_vehicle && (
-          <span className="text-xs border border-[#A9CEE8] text-[#4A7BA7] px-2 py-0.5 rounded-full">Has vehicle</span>
-        )}
-      </div>
-
+      {/* Button pinned to bottom */}
       <button
         type="button"
         onClick={handleConnect}
         disabled={connecting || connected}
-        className={`mt-1 w-full py-2 text-xs font-semibold rounded-xl border transition-colors duration-150
+        className={`mt-4 w-full py-2 text-xs font-semibold rounded-xl border transition-colors duration-150
           focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0070E0]
           disabled:cursor-not-allowed
           ${connected

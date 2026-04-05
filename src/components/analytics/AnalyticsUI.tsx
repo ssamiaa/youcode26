@@ -10,10 +10,10 @@ interface AnalyticsUIProps {
 }
 
 const STATUS_COLORS: Record<string, string> = {
-  matched:      '#4A7BA7',
-  sent:         '#0070E0',
-  interested:   '#22C55E',
-  not_interested: '#EF4444',
+  matched:        '#4A7BA7',
+  sent:           '#0070E0',
+  interested:     '#5DADE2',
+  not_interested: '#8B9DB5',
 }
 
 const STATUS_LABELS: Record<string, string> = {
@@ -151,7 +151,7 @@ export default function AnalyticsUI({ onCreateAd }: AnalyticsUIProps) {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <KpiCard label="Total matched" value={total} color="#4A7BA7" />
         <KpiCard label="Outreach sent" value={sent + interested + notInterested} color="#0070E0" />
-        <KpiCard label="Interested" value={interested} color="#22C55E" />
+        <KpiCard label="Interested" value={interested} color="#5DADE2" />
         <KpiCard label="Interest rate" value={`${interestRate}%`} color="#A9CEE8" sub={`${responseRate}% responded`} />
       </div>
 
@@ -207,7 +207,7 @@ export default function AnalyticsUI({ onCreateAd }: AnalyticsUIProps) {
                   itemStyle={{ color: '#fff' }}
                   cursor={{ fill: 'rgba(255,255,255,0.04)' }}
                 />
-                <Bar dataKey="count" fill="#22C55E" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="count" fill="#5DADE2" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           )}
@@ -238,7 +238,7 @@ export default function AnalyticsUI({ onCreateAd }: AnalyticsUIProps) {
       <div className="rounded-2xl border border-[#A9CEE8] bg-[#1A3A52] p-5 space-y-4">
         <h3 className="text-sm font-bold text-white">Outreach insights</h3>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs text-[#A9CEE8]">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs text-[#A9CEE8] mt-2">
           {interestRate >= 50 ? (
             <Insight positive text={`Strong interest rate of ${interestRate}% — your messaging is resonating.`} />
           ) : interestRate > 0 ? (
@@ -282,7 +282,7 @@ export default function AnalyticsUI({ onCreateAd }: AnalyticsUIProps) {
 function KpiCard({ label, value, color, sub }: { label: string; value: string | number; color: string; sub?: string }) {
   return (
     <div className="rounded-2xl border border-[#A9CEE8] bg-[#1A3A52] px-4 py-4 flex flex-col gap-1">
-      <p className="text-xs text-[#8B9DB5]">{label}</p>
+      <p className="text-xs font-semibold text-white">{label}</p>
       <p className="text-2xl font-bold tabular-nums" style={{ color }}>{value}</p>
       {sub && <p className="text-xs text-[#4A7BA7]">{sub}</p>}
     </div>
@@ -292,7 +292,7 @@ function KpiCard({ label, value, color, sub }: { label: string; value: string | 
 function ChartCard({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div className="rounded-2xl border border-[#A9CEE8] bg-[#1A3A52] px-4 py-4">
-      <p className="text-xs font-semibold text-[#A9CEE8] mb-3">{title}</p>
+      <p className="text-sm font-bold text-white mb-3">{title}</p>
       {children}
     </div>
   )
@@ -300,9 +300,9 @@ function ChartCard({ title, children }: { title: string; children: React.ReactNo
 
 function Insight({ text, positive }: { text: string; positive?: boolean }) {
   return (
-    <div className={`flex gap-2 items-start rounded-xl px-3 py-2.5 border ${positive ? 'border-green-800 bg-green-950/40' : 'border-[#4A7BA7] bg-[#002855]/60'}`}>
-      <span className={`mt-0.5 flex-shrink-0 w-1.5 h-1.5 rounded-full ${positive ? 'bg-green-400' : 'bg-[#5DADE2]'}`} />
-      <p className={positive ? 'text-green-300' : 'text-[#A9CEE8]'}>{text}</p>
+    <div className={`flex gap-2 items-center rounded-xl px-3 py-2.5 border ${positive ? 'border-[#0070E0] bg-[#0070E0]/10' : 'border-[#4A7BA7] bg-[#002855]/60'}`}>
+      <span className={`flex-shrink-0 w-1.5 h-1.5 rounded-full ${positive ? 'bg-[#5DADE2]' : 'bg-[#8B9DB5]'}`} />
+      <p className={positive ? 'text-[#A9CEE8]' : 'text-[#8B9DB5]'}>{text}</p>
     </div>
   )
 }

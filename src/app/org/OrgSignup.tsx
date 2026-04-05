@@ -96,10 +96,8 @@ export default function OrgSignup({ onSubmit }: OrgSignupProps) {
     <div className="min-h-screen bg-[#002855] flex flex-col">
       {/* Header — matches dashboard */}
       <header className="border-b border-[#1A3A52] px-4 py-3">
-        <div className="flex flex-col items-start">
-          <img src="/logo.png" alt="Relinkd logo" className="h-16 w-16 rounded-xl object-contain" />
-          <span className="text-sm font-bold text-white tracking-tight mt-1">Relinkd</span>
-        </div>
+        {/* <img src="/logo.png" alt="Relinkd logo" className="h-16 w-16 rounded-xl object-contain" /> */}
+        <p className="text-3xl font-bold tracking-widest text-[#8B9DB5] uppercase">Relinkd</p>
       </header>
 
       {/* Form card */}
