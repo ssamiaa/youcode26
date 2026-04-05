@@ -1,11 +1,12 @@
 import { useState } from 'react'
 import ConversationUI, { type MatchResult } from '../../components/conversation/ConversationUI'
 import PipelineBoard from '../../components/pipeline/PipelineBoard'
+import ImportCSV from '../../components/ImportCSV'
 
 type Tab = 'find' | 'pipeline'
 
 export interface VolunteerCard {
-  volunteer_ID: string
+  volunteer_id: string
   first_name: string
   last_name: string
   age?: number
@@ -18,6 +19,7 @@ export interface VolunteerCard {
   prior_volunteer_experience?: boolean
   has_vehicle?: boolean
   background_check_status?: string
+  phone?: string
   match_score?: number
   match_reason?: string
 }
@@ -36,13 +38,15 @@ export default function OrgDashboard() {
     if (!res.ok) throw new Error(`Server error: ${res.status}`)
     const data: MatchResult = await res.json()
     if (data.volunteers) setVolunteers(data.volunteers as VolunteerCard[])
+    if (data.session_tag) setSessionTag(data.session_tag)
     return data
   }
 
   return (
     <div className="min-h-screen bg-white flex flex-col">
-      <header className="border-b border-gray-200 px-4 py-3">
+      <header className="border-b border-gray-200 px-4 py-3 flex items-center justify-between">
         <p className="text-xs font-bold tracking-widest text-gray-400 uppercase">Organizer</p>
+        <ImportCSV />
       </header>
 
       <nav aria-label="Dashboard sections" className="border-b border-gray-200 px-4 flex gap-0">
@@ -72,7 +76,6 @@ export default function OrgDashboard() {
             volunteers={volunteers}
             onSend={handleSend}
             sessionTag={sessionTag}
-            onSessionTagChange={setSessionTag}
           />
         )}
         {tab === 'pipeline' && <PipelineBoard />}
@@ -87,10 +90,9 @@ interface FindTabProps {
   volunteers: VolunteerCard[]
   onSend: (text: string) => Promise<MatchResult>
   sessionTag: string
-  onSessionTagChange: (tag: string) => void
 }
 
-function FindTab({ volunteers, onSend, sessionTag, onSessionTagChange }: FindTabProps) {
+function FindTab({ volunteers, onSend, sessionTag }: FindTabProps) {
   return (
     <div className="flex-1 overflow-hidden flex flex-col lg:flex-row gap-4 p-4">
 
@@ -100,20 +102,6 @@ function FindTab({ volunteers, onSend, sessionTag, onSessionTagChange }: FindTab
         className="flex-shrink-0 rounded-2xl border border-gray-200 overflow-hidden shadow-sm
                    flex flex-col h-[460px] lg:h-auto lg:w-[520px]"
       >
-        {/* Session tag input sits above the chat */}
-        <div className="border-b border-gray-100 px-4 py-2.5 flex items-center gap-2">
-          <label htmlFor="session-tag" className="text-xs text-gray-400 flex-shrink-0">
-            Search label
-          </label>
-          <input
-            id="session-tag"
-            type="text"
-            value={sessionTag}
-            onChange={e => onSessionTagChange(e.target.value)}
-            placeholder="e.g. Food bank Saturday, Event setup…"
-            className="flex-1 text-xs text-black bg-transparent border-none outline-none placeholder:text-gray-300"
-          />
-        </div>
         <div className="flex-1 min-h-0 flex flex-col">
           <ConversationUI onSendMessage={onSend} />
         </div>
@@ -144,7 +132,7 @@ function FindTab({ volunteers, onSend, sessionTag, onSessionTagChange }: FindTab
             </div>
             <ul className="grid grid-cols-1 xl:grid-cols-2 gap-3">
               {volunteers.map(v => (
-                <VolunteerCardItem key={v.volunteer_ID} volunteer={v} sessionTag={sessionTag} />
+                <VolunteerCardItem key={v.volunteer_id} volunteer={v} sessionTag={sessionTag} />
               ))}
             </ul>
           </>
@@ -167,7 +155,7 @@ function VolunteerCardItem({ volunteer: v, sessionTag }: { volunteer: VolunteerC
       await fetch('/api/outreach', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ volunteer_ID: v.volunteer_ID, session_tag: sessionTag }),
+        body: JSON.stringify({ volunteer_id: v.volunteer_id, session_tag: sessionTag }),
       })
       setConnected(true)
     } catch {

@@ -1,16 +1,19 @@
 import { useState, useEffect, useCallback } from 'react'
 
 export interface PipelineEntry {
-  match_id: string
-  volunteer_ID: string
-  first_name: string
-  last_name: string
+  id: string
+  need_id?: string
+  volunteer_id: string
+  score?: number
+  reason?: string
+  status: 'sent' | 'interested' | 'not_interested'
+  session_tag?: string
+  created_at: string
+  // joined from volunteers table by the API
+  first_name?: string
+  last_name?: string
   neighbourhood?: string
   skills?: string[]
-  status: 'sent' | 'interested' | 'not_interested'
-  session_tag?: string       // label from the search session that triggered outreach
-  contacted_at: string
-  responded_at?: string
 }
 
 type Column = { id: PipelineEntry['status']; label: string; description: string }
@@ -152,7 +155,7 @@ function KanbanColumn({ col, entries }: { col: Column; entries: PipelineEntry[] 
         {entries.length === 0 ? (
           <li className="text-xs text-gray-300 text-center py-6">Empty</li>
         ) : (
-          entries.map(entry => <PipelineCard key={entry.match_id} entry={entry} />)
+          entries.map(entry => <PipelineCard key={entry.id} entry={entry} />)
         )}
       </ul>
     </section>
@@ -191,8 +194,8 @@ function PipelineCard({ entry: e }: { entry: PipelineEntry }) {
       )}
 
       <div className="text-xs text-gray-400 space-y-0.5 mt-1">
-        <p>Sent {formatDate(e.contacted_at)}</p>
-        {e.responded_at && <p>Replied {formatDate(e.responded_at)}</p>}
+        <p>Sent {formatDate(e.created_at)}</p>
+        {e.score != null && <p>Score {e.score}</p>}
       </div>
     </li>
   )
