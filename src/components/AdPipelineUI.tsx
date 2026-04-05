@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAdPipeline } from '../hooks/useAdPipeline';
 import type { AdInput, PipelineStep, AdArchetype, PostBlueprint, AlignmentResult, CopyAssets, ScrimStyle } from '../hooks/useAdPipeline';
 import { supabase } from '../lib/supabaseClient';
@@ -384,29 +384,18 @@ function AdResult({ cloudinaryUrl, imageUrl, copyAssets, blueprint, imageSummary
   );
 }
 
-// ─── Insights Banner ─────────────────────────────────────────────────────────
-
-function InsightsBanner({ context }: { context: string }) {
-  return (
-    <div className="insights-banner">
-      <div className="insights-banner-icon">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
-        </svg>
-      </div>
-      <div className="insights-banner-body">
-        <div className="insights-banner-label">Ad shaped by outreach insights</div>
-        <p className="insights-banner-text">{context}</p>
-      </div>
-    </div>
-  );
-}
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 const ARCH_STRIP = ['Architect', 'Hunter', 'Observer', 'Aligner', 'Copywriter', 'Builder'] as const;
 
-export function AdPipelineUI({ onBack, insightsContext }: { onBack?: () => void; insightsContext?: string } = {}) {
+export function AdPipelineUI({ onBack, insightsContext, onInsightsConsumed }: {
+  onBack?: () => void;
+  insightsContext?: string;
+  /** Called once the insights-driven pipeline has been auto-started, so the
+   *  parent can clear the context and prevent it re-firing on future visits. */
+  onInsightsConsumed?: () => void;
+} = {}) {
   const {
     step, stepMessage,
     blueprint, imageUrl, imageSummary, alignment, copyAssets, cloudinaryUrl,
@@ -418,6 +407,9 @@ export function AdPipelineUI({ onBack, insightsContext }: { onBack?: () => void;
   const [loadingOrg, setLoadingOrg] = useState(true);
   const [orgFetchError, setOrgFetchError] = useState<string | null>(null);
   const [mission, setMission] = useState('');
+
+  // Track which insights string we've already consumed so we never double-fire.
+  const consumedInsightRef = useRef<string | null>(null);
 
   useEffect(() => {
     async function fetchOrg() {
@@ -455,6 +447,22 @@ export function AdPipelineUI({ onBack, insightsContext }: { onBack?: () => void;
     }
     fetchOrg();
   }, []);
+
+  // ── Auto-start when insights context arrives ──────────────────────────────
+  // Fires whenever insightsContext or orgInput changes. The ref guard ensures
+  // each unique insights string triggers exactly one pipeline run.
+  useEffect(() => {
+    if (!insightsContext?.trim() || !orgInput) {
+      // Context was cleared after being consumed — reset so the next click works.
+      consumedInsightRef.current = null;
+      return;
+    }
+    if (consumedInsightRef.current === insightsContext) return;
+
+    consumedInsightRef.current = insightsContext;
+    onInsightsConsumed?.();
+    run({ ...orgInput, mission: '', insightsContext });
+  }, [insightsContext, orgInput, onInsightsConsumed, run]);
 
   const isProcessing = (
     step === 'blueprint' || step === 'sourcing' || step === 'observing' ||
@@ -513,7 +521,6 @@ export function AdPipelineUI({ onBack, insightsContext }: { onBack?: () => void;
             </div>
           ) : orgInput && (
             <div className="generate-view">
-              {insightsContext && <InsightsBanner context={insightsContext} />}
               <div className="org-card">
                 <div className="org-card-label">Generating for</div>
                 <div className="org-card-name">{orgInput.orgName}</div>

@@ -309,20 +309,31 @@ function decodeModelEscapesInCopy(text: string): string {
 // ─── Phase 1: Architect ───────────────────────────────────────────────────────
 
 async function runArchitect(input: AdInput): Promise<PostBlueprint> {
-  const hasInsights = !!(input.insightsContext?.trim());
+  // When insights are present, pick ONE random clause so the campaign has
+  // a single sharp focus rather than trying to honour all data at once.
+  let focusedInsight: string | null = null;
+  if (input.insightsContext?.trim()) {
+    const clauses = input.insightsContext
+      .split(/\.\s+/)
+      .map(s => s.replace(/\.$/, '').trim())
+      .filter(Boolean);
+    if (clauses.length > 0) {
+      focusedInsight = clauses[Math.floor(Math.random() * clauses.length)];
+    }
+  }
 
   const system = `You are a non-profit campaign architect. Produce a creative blueprint.
 Pick ONE archetype:
 - Skill-Builder: audiences who want to contribute expertise and feel professionally valuable.
 - Community-Seeker: motivated by belonging, local pride, collective impact.
 - Legacy-Maker: driven by a desire to leave something lasting.
-pexelsQuery: 3–5 words describing LITERALLY what should be in the photo. No abstractions.${hasInsights ? `
-When "Outreach insights" are provided, let the data patterns guide which archetype fits best and what the ad's idea and target audience should emphasise.` : ''}
+pexelsQuery: 3–5 words describing LITERALLY what should be in the photo. No abstractions.${focusedInsight ? `
+A single outreach data point anchors this campaign. Let it determine the archetype, core idea, and target audience. Do not draw on any other information.` : ''}
 RESPOND WITH VALID JSON ONLY.`;
 
   const user = `Blueprint for: ${input.orgName} | ${input.sector} | ${input.location}
 Mission: ${input.mission}
-${hasInsights ? `\nOutreach insights from real volunteer engagement data:\n${input.insightsContext}\n` : ''}
+${focusedInsight ? `\nAnchor insight (build the entire campaign around this one data point):\n"${focusedInsight}"\n` : ''}
 {
   "idea": "one-sentence core concept",
   "feeling": "primary emotion (e.g. 'urgent hope', 'quiet pride')",
@@ -675,7 +686,11 @@ export function useAdPipeline() {
       const imageSummary = await runObserver(imageUrl);
       patch({ imageSummary, step: 'aligning', stepMessage: 'Aligning idea to image...' });
 
-      const alignment = await runAligner(blueprint, imageSummary);
+      // When the campaign is anchored to a single outreach insight, the idea
+      // is locked — skip the Aligner so it cannot pivot away from it.
+      const alignment: AlignmentResult = input.insightsContext?.trim()
+        ? { aligned: true, revisedIdea: blueprint.idea, alignmentNote: 'Insights-anchored campaign — idea locked to anchor insight.' }
+        : await runAligner(blueprint, imageSummary);
       patch({ alignment, step: 'writing', stepMessage: `Writing copy for ${scrimStyle} layout...` });
 
       // Copywriter receives the pre-chosen scrimStyle; it only makes creative decisions.
