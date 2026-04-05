@@ -29,22 +29,41 @@ export default function OrgDashboard() {
   const [tab, setTab] = useState<Tab>('find')
   const [volunteers, setVolunteers] = useState<VolunteerCard[]>([])
   const [sessionTag, setSessionTag] = useState('')
+  const [sessionId, setSessionId] = useState('')
+  const [chatKey, setChatKey] = useState(0)
+  const [pipelineRefreshKey, setPipelineRefreshKey] = useState(0)
+  const [connectedIds, setConnectedIds] = useState<Set<string>>(new Set())
+
+  function handleNewChat() {
+    setChatKey(k => k + 1)
+    setVolunteers([])
+    setSessionTag('')
+    setSessionId('')
+    setConnectedIds(new Set())
+  }
+
+  function handleConnect(volunteerId: string) {
+    setConnectedIds(prev => new Set(prev).add(volunteerId))
+    setPipelineRefreshKey(k => k + 1)
+  }
 
   async function handleSend(text: string): Promise<MatchResult> {
     const res = await fetch('/api/match', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message: text, session_tag: sessionTag }),
+      body: JSON.stringify({ message: text, session_tag: sessionTag, session_id: sessionId }),
     })
     if (!res.ok) throw new Error(`Server error: ${res.status}`)
     const data: MatchResult = await res.json()
     if (data.volunteers) setVolunteers(data.volunteers as VolunteerCard[])
     if (data.session_tag) setSessionTag(data.session_tag)
+    if (data.session_id) setSessionId(data.session_id)
+    if (data.volunteers?.length) setPipelineRefreshKey(k => k + 1)
     return data
   }
 
   return (
-    <div className="min-h-screen bg-white flex flex-col">
+    <div className="h-screen bg-white flex flex-col overflow-hidden">
       <header className="border-b border-gray-200 px-4 py-3 flex items-center justify-between">
         <p className="text-xs font-bold tracking-widest text-gray-400 uppercase">Organizer</p>
         <ImportCSV />
@@ -73,19 +92,23 @@ export default function OrgDashboard() {
       </nav>
 
       <main className="flex-1 flex flex-col overflow-hidden">
-        {tab === 'find' && (
+        <div className={tab === 'find' ? 'flex-1 flex flex-col overflow-hidden' : 'hidden'}>
           <FindTab
+            key={chatKey}
             volunteers={volunteers}
             onSend={handleSend}
             sessionTag={sessionTag}
+            onNewChat={handleNewChat}
+            onConnect={handleConnect}
+            connectedIds={connectedIds}
           />
-        )}
-        {tab === 'pipeline' && <PipelineBoard />}
-        {tab === 'ads' && (
-          <div className="flex-1 overflow-y-auto">
-            <AdPipelineUI onBack={() => setTab('find')} />
-          </div>
-        )}
+        </div>
+        <div className={tab === 'pipeline' ? 'flex-1 flex flex-col overflow-hidden' : 'hidden'}>
+          <PipelineBoard refreshTrigger={pipelineRefreshKey} onVolunteerConnected={handleConnect} />
+        </div>
+        <div className={tab === 'ads' ? 'flex-1 overflow-y-auto' : 'hidden'}>
+          <AdPipelineUI onBack={() => setTab('find')} />
+        </div>
       </main>
     </div>
   )
@@ -97,27 +120,27 @@ interface FindTabProps {
   volunteers: VolunteerCard[]
   onSend: (text: string) => Promise<MatchResult>
   sessionTag: string
+  onNewChat: () => void
+  onConnect: (volunteerId: string) => void
+  connectedIds: Set<string>
 }
 
-function FindTab({ volunteers, onSend, sessionTag }: FindTabProps) {
+function FindTab({ volunteers, onSend, sessionTag, onNewChat, onConnect, connectedIds }: FindTabProps) {
   return (
     <div className="flex-1 overflow-hidden flex flex-col lg:flex-row gap-4 p-4">
 
       {/* Left — conversation card */}
       <section
         aria-label="Find volunteers by conversation"
-        className="flex-shrink-0 rounded-2xl border border-gray-200 overflow-hidden shadow-sm
-                   flex flex-col h-[460px] lg:h-auto lg:w-[520px]"
+        className="flex-1 min-h-0 lg:flex-none lg:w-[520px] rounded-2xl border border-gray-200 overflow-hidden shadow-sm flex flex-col"
       >
-        <div className="flex-1 min-h-0 flex flex-col">
-          <ConversationUI onSendMessage={onSend} />
-        </div>
+        <ConversationUI onSendMessage={onSend} onNewChat={onNewChat} />
       </section>
 
       {/* Right — results card */}
       <section
         aria-label="Matched volunteers"
-        className="flex-1 rounded-2xl border border-gray-200 shadow-sm overflow-y-auto p-5 min-h-[200px]"
+        className="flex-1 min-h-0 rounded-2xl border border-gray-200 shadow-sm overflow-y-auto p-5"
       >
         {volunteers.length === 0 ? (
           <div className="h-full flex items-center justify-center">
@@ -128,7 +151,7 @@ function FindTab({ volunteers, onSend, sessionTag }: FindTabProps) {
         ) : (
           <>
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-sm font-bold text-black">
+              <h2 className="text-sm font-bold !text-black">
                 {volunteers.length} match{volunteers.length !== 1 ? 'es' : ''} found
               </h2>
               {sessionTag && (
@@ -139,7 +162,7 @@ function FindTab({ volunteers, onSend, sessionTag }: FindTabProps) {
             </div>
             <ul className="grid grid-cols-1 xl:grid-cols-2 gap-3">
               {volunteers.map(v => (
-                <VolunteerCardItem key={v.volunteer_id} volunteer={v} sessionTag={sessionTag} />
+                <VolunteerCardItem key={v.volunteer_id} volunteer={v} sessionTag={sessionTag} onConnect={onConnect} connected={connectedIds.has(v.volunteer_id)} />
               ))}
             </ul>
           </>
@@ -152,9 +175,10 @@ function FindTab({ volunteers, onSend, sessionTag }: FindTabProps) {
 
 // ── Volunteer card ────────────────────────────────────────────────────────────
 
-function VolunteerCardItem({ volunteer: v, sessionTag }: { volunteer: VolunteerCard; sessionTag: string }) {
+function VolunteerCardItem({ volunteer: v, sessionTag, onConnect, connected: externalConnected }: { volunteer: VolunteerCard; sessionTag: string; onConnect: (volunteerId: string) => void; connected: boolean }) {
   const [connecting, setConnecting] = useState(false)
-  const [connected, setConnected] = useState(false)
+  const [localConnected, setLocalConnected] = useState(false)
+  const connected = externalConnected || localConnected
 
   async function handleConnect() {
     setConnecting(true)
@@ -162,9 +186,15 @@ function VolunteerCardItem({ volunteer: v, sessionTag }: { volunteer: VolunteerC
       await fetch('/api/outreach', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ volunteer_id: v.volunteer_id, session_tag: sessionTag }),
+        body: JSON.stringify({
+          volunteer_id: v.volunteer_id,
+          session_tag: sessionTag,
+          score: v.match_score ?? null,
+          reason: v.match_reason ?? null,
+        }),
       })
-      setConnected(true)
+      setLocalConnected(true)
+      onConnect(v.volunteer_id)
     } catch {
       // silently fail — organizer can retry
     } finally {
@@ -226,7 +256,7 @@ function VolunteerCardItem({ volunteer: v, sessionTag }: { volunteer: VolunteerC
           }`}
         aria-label={`Connect with ${v.first_name} ${v.last_name}`}
       >
-        {connected ? 'Outreach sent' : connecting ? 'Sending…' : 'Connect'}
+        {connected ? 'Connected' : connecting ? 'Connecting…' : 'Connect'}
       </button>
     </li>
   )

@@ -5,6 +5,12 @@ import cors from 'cors'
 import { parseNeed } from './lib/ai/parseNeed.js'
 import { scoreAndMatch } from './lib/matching/score.js'
 import Anthropic from '@anthropic-ai/sdk'
+import { createClient } from '@supabase/supabase-js'
+
+function getSupabase() {
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.VITE_SUPABASE_ANON_KEY!
+  return createClient(process.env.VITE_SUPABASE_URL!, key)
+}
 
 const app = express()
 app.use(cors())
@@ -16,42 +22,57 @@ console.log('ANTHROPIC KEY exists:', !!process.env.ANTHROPIC_API_KEY)
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
-// Parse endpoint
+// store in memory to remember conversation history per session
+const sessions = new Map<string, string>()
+
+// Parse endpoint - turns plain text into structured JSON
 app.post('/api/parse', async (req, res) => {
   const { description } = req.body
   const parsed = await parseNeed(description)
   res.json(parsed)
 })
 
+// Match endpoint - guided conversation + scoring + reasons
 app.post('/api/match', async (req, res) => {
-    const { message } = req.body
-    
-    
-    if (!message) {
-      return res.json({ reply: "Hi! Describe what kind of volunteer help you need." })
-    }
+  const { message, session_id } = req.body
 
-  // Claude parses whatever the coordinator typed so far
-  const criteria = await parseNeed(message)
+  if (!message) {
+    return res.json({ reply: "Hi! Describe what kind of volunteer help you need." })
+  }
 
-  // Check what info is missing and ask for it one at a time
+  // Generate a new session ID if this is the first message
+  const id = (session_id && session_id !== '') ? session_id : `session-${Date.now()}`
+
+
+  // Accumulate all messages so Claude has full context from the whole conversation
+  const previous = sessions.get(id) ?? ''
+  const accumulated = previous ? `${previous}. ${message}` : message
+  sessions.set(id, accumulated)
+
+  console.log('SESSION ID:', id)
+  console.log('ACCUMULATED:', accumulated)
+
+  // Claude parses the full accumulated conversation so far
+  const criteria = await parseNeed(accumulated)
+
+  console.log('PARSED CRITERIA:', JSON.stringify(criteria))
+
+  // Only block on truly essential fields — language, availability, neighbourhood
   if (!criteria.languages.length) {
-    return res.json({ reply: "What language should the volunteer speak?" })
+    return res.json({ reply: "What language should the volunteer speak?", session_id: id })
   }
   if (!criteria.availability.length) {
-    return res.json({ reply: "What days or times do they need to be available?" })
+    return res.json({ reply: "What days or times do they need to be available?", session_id: id })
   }
   if (!criteria.neighbourhood) {
-    return res.json({ reply: "What neighbourhood is this for?" })
+    return res.json({ reply: "What neighbourhood is this for?", session_id: id })
   }
-  if (!criteria.cause_areas.length) {
-    return res.json({ reply: "What kind of work is this for?" })
-  }
+  // cause_areas is optional — don't block on it
 
-  // All fields filled score
+  // All essential fields filled — score volunteers from Supabase
   const topVolunteers = await scoreAndMatch(criteria)
 
-  // reason for each match
+  // Claude writes a reason for each match
   const withReasons = await Promise.all(
     topVolunteers.map(async (volunteer) => {
       const response = await client.messages.create({
@@ -60,8 +81,8 @@ app.post('/api/match', async (req, res) => {
         messages: [{
           role: 'user',
           content: `Volunteer: ${JSON.stringify(volunteer)}
-Need: ${message}
-Write one sentence (max 25 words) explaining why this is a good match. Be specific.`
+Need: ${accumulated}
+Reply with a single plain sentence (no markdown, no bullet points, no headers) of max 25 words explaining why this volunteer is a good match. Only output the sentence itself.`
         }]
       })
       const reason = response.content[0].type === 'text' ? response.content[0].text : ''
@@ -75,28 +96,95 @@ Write one sentence (max 25 words) explaining why this is a good match. Be specif
       }
     })
   )
+
+  // Claude generates a short session tag summarising the task
   const tagResponse = await client.messages.create({
     model: 'claude-haiku-4-5-20251001',
     max_tokens: 20,
     messages: [{
       role: 'user',
-      content: `Summarise this volunteer need in 2-4 words max, like a tag. No punctuation. Example: "Cantonese elder care weekends". Need: ${message}`
+      content: `Summarise this volunteer need in 2-4 words max, like a tag. No punctuation. Example: "Cantonese elder care weekends". Need: ${accumulated}`
     }]
   })
   const session_tag = tagResponse.content[0].type === 'text' ? tagResponse.content[0].text.trim() : ''
-  
-  // Return reply + volunteers + session tag
+
+  // Save all matches to the DB
+  const supabase = getSupabase()
+  const rows = withReasons.map(v => ({
+    volunteer_id: v.volunteer_id,
+    score: v.match_score ?? null,
+    reason: v.match_reason ?? null,
+    session_tag: session_tag || null,
+    status: 'matched',
+  }))
+  const { error: insertError } = await supabase.from('matches').insert(rows)
+  if (insertError) console.error('matches insert error:', insertError.message)
+
   return res.json({
     reply: `I found ${withReasons.length} great matches for you!`,
     volunteers: withReasons,
-    session_tag
+    session_tag,
+    session_id: id
+  })
+})
+
+// Mark a matched volunteer as 'sent'
+app.post('/api/outreach', async (req, res) => {
+  const { id, volunteer_id, session_tag } = req.body
+
+  const supabase = getSupabase()
+
+  // If we have the exact match row id, use it; otherwise fall back to volunteer+session filter
+  let query = supabase.from('matches').update({ status: 'sent' })
+  if (id) {
+    query = query.eq('id', id)
+  } else {
+    if (!volunteer_id) return res.status(400).json({ error: 'id or volunteer_id required' })
+    query = query.eq('volunteer_id', volunteer_id)
+    if (session_tag != null) query = query.eq('session_tag', session_tag)
+  }
+
+  const { error } = await query
+
+  if (error) return res.status(500).json({ error: error.message })
+  return res.json({ ok: true })
+})
+
+// Fetch pipeline entries joined with volunteer info
+app.get('/api/pipeline', async (_req, res) => {
+  const supabase = getSupabase()
+
+  const { data: matches, error } = await supabase
+    .from('matches')
+    .select('*')
+    .order('created_at', { ascending: false })
+
+  if (error) return res.status(500).json({ error: error.message })
+  if (!matches?.length) return res.json([])
+
+  // Fetch volunteer details for each unique volunteer_id
+  const volunteerIds = [...new Set(matches.map((m: { volunteer_id: string }) => m.volunteer_id))]
+  const { data: volunteers } = await supabase
+    .from('volunteers')
+    .select('volunteer_id, first_name, last_name, neighbourhood, skills')
+    .in('volunteer_id', volunteerIds)
+
+  const volunteerMap = Object.fromEntries(
+    (volunteers ?? []).map((v: { volunteer_id: string; first_name: string; last_name: string; neighbourhood: string; skills: string }) => [v.volunteer_id, v])
+  )
+
+  const entries = matches.map((m: { volunteer_id: string; skills?: string[] }) => {
+    const v = volunteerMap[m.volunteer_id] ?? {}
+    return {
+      ...m,
+      first_name: v.first_name,
+      last_name: v.last_name,
+      neighbourhood: v.neighbourhood,
+      skills: v.skills ? v.skills.split(';').map((s: string) => s.trim()) : [],
+    }
   })
 
-  // Return reply + volunteers so the UI can show match cards
-  return res.json({
-    reply: `I found ${withReasons.length} great matches for you!`,
-    volunteers: withReasons
-  })
+  return res.json(entries)
 })
 
 app.listen(3001, () => console.log('Server running on port 3001'))
