@@ -194,6 +194,59 @@ app.post('/api/webhook', async (req, res) => {
 <Response><Message>${responseText}</Message></Response>`)
 })
 
+/** PostgREST-safe identifier (alphanumeric + underscore). */
+function isSafeDbColumn(s: string): boolean {
+  return /^[a-zA-Z_][a-zA-Z0-9_]{0,62}$/.test(s)
+}
+
+/** Allowed organization fields to update. */
+const ORG_UPDATE_KEYS = new Set([
+  'bn', 'legal_name', 'account_name', 'mission', 'address1', 'address2',
+  'city', 'province', 'postal_code', 'country', 'sector', 'website', 'email',
+])
+
+// Update organization profile (uses service role / server key — same as pipeline & outreach)
+app.patch('/api/organization', async (req, res) => {
+  const body = req.body as {
+    filter?: { column: string; value: string }
+    updates?: Record<string, unknown>
+  }
+  const { filter, updates } = body
+  if (!filter?.column || typeof filter.value !== 'string' || !updates || typeof updates !== 'object') {
+    return res.status(400).json({ error: 'Request must include filter { column, value } and updates object.' })
+  }
+  if (!isSafeDbColumn(filter.column)) {
+    return res.status(400).json({ error: 'Invalid filter column name.' })
+  }
+
+  const sanitized: Record<string, unknown> = {}
+  for (const key of Object.keys(updates)) {
+    if (ORG_UPDATE_KEYS.has(key)) sanitized[key] = updates[key]
+  }
+  if (Object.keys(sanitized).length === 0) {
+    return res.status(400).json({ error: 'No valid fields to update.' })
+  }
+
+  const supabase = getSupabase()
+  const { data, error } = await supabase
+    .from('organizations')
+    .update(sanitized)
+    .eq(filter.column, filter.value)
+    .select()
+
+  if (error) return res.status(400).json({ error: error.message })
+
+  const rows = data ?? []
+  if (rows.length === 0) {
+    return res.status(404).json({
+      error:
+        'No row was updated. If you use Supabase Row Level Security, the anon client cannot UPDATE from the browser; this API path uses the server key and should still work—check that filter column/value matches your organizations table.',
+    })
+  }
+
+  return res.json({ ok: true, organization: rows[0] })
+})
+
 // Fetch pipeline entries joined with volunteer info
 app.get('/api/pipeline', async (_req, res) => {
   const supabase = getSupabase()

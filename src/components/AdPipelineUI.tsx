@@ -853,12 +853,18 @@ function AdGallery({
 
 const ARCH_STRIP = ['Architect', 'Hunter', 'Observer', 'Aligner', 'Copywriter', 'Builder'] as const;
 
-export function AdPipelineUI({ insightsContext, onInsightsConsumed }: {
+export function AdPipelineUI({
+  insightsContext,
+  onInsightsConsumed,
+  organizationRefreshKey = 0,
+}: {
   onBack?: () => void;
   insightsContext?: string;
   /** Called once the insights-driven pipeline has been auto-started, so the
    *  parent can clear the context and prevent it re-firing on future visits. */
   onInsightsConsumed?: () => void;
+  /** Bump after organization profile is saved so this view reloads org fields. */
+  organizationRefreshKey?: number;
 } = {}) {
   const {
     step, stepMessage,
@@ -929,6 +935,8 @@ export function AdPipelineUI({ insightsContext, onInsightsConsumed }: {
       const { data, error: dbErr } = await supabase
         .from('organizations')
         .select('*')
+        // Stable pick when multiple rows exist; this schema has no `id` on organizations.
+        .order('bn', { ascending: true })
         .limit(1)
         .maybeSingle();
 
@@ -954,7 +962,7 @@ export function AdPipelineUI({ insightsContext, onInsightsConsumed }: {
       setLoadingOrg(false);
     }
     fetchOrg();
-  }, []);
+  }, [organizationRefreshKey]);
 
   // ── Auto-start when insights context arrives ────────────────────────────
   // The ref guard ensures each unique insights string triggers exactly one run.
@@ -986,11 +994,9 @@ export function AdPipelineUI({ insightsContext, onInsightsConsumed }: {
     <div className="ad-pipeline" ref={topRef}>
       <header className="pipeline-header">
         <div className="header-badge">6-AGENT PIPELINE</div>
-        <h1>Non-Profit Post Generator</h1>
+        <h1>Outreach Post Creator</h1>
         <p>
-          Six AI agents collaborate — an Architect blueprints the campaign, a Hunter sources imagery,
-          an Observer analyses it with vision, an Aligner refines the idea if needed, a Copywriter
-          crafts the copy, and a Builder composes the final post.
+          A six-step agentic pipeline creates posts for your outreach campaign, using your outreach analytics and copywrite-free images from Pexels.
         </p>
       </header>
 
