@@ -1206,3 +1206,527 @@
     border-bottom: 1px solid var(--border);
   }
 }
+
+/* ─── Result Actions ─────────────────────────────────────────────────────────── */
+
+.result-actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.btn-download {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 28px;
+  border-radius: var(--radius);
+  border: 1.5px solid rgba(6, 182, 212, 0.4);
+  background: rgba(6, 182, 212, 0.08);
+  color: #06b6d4;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s, transform 0.15s;
+}
+
+.btn-download:hover {
+  background: rgba(6, 182, 212, 0.16);
+  border-color: rgba(6, 182, 212, 0.65);
+  transform: translateY(-1px);
+}
+
+.btn-download svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* ─── Ad Gallery ─────────────────────────────────────────────────────────────── */
+
+.ad-gallery {
+  width: 100%;
+  max-width: 900px;
+  margin-top: 56px;
+  padding-top: 32px;
+  border-top: 1px solid var(--border);
+}
+
+.gallery-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.gallery-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.gallery-title svg {
+  width: 14px;
+  height: 14px;
+}
+
+.gallery-count {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  padding: 2px 8px;
+  border-radius: 100px;
+}
+
+.gallery-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+  gap: 14px;
+}
+
+.gallery-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  transition: border-color 0.2s, transform 0.15s, box-shadow 0.2s;
+}
+
+.gallery-card:hover {
+  border-color: var(--border-focus);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(108, 99, 255, 0.12);
+}
+
+.gallery-card-thumb {
+  display: block;
+  position: relative;
+  aspect-ratio: 1;
+  overflow: hidden;
+  background: var(--bg-elevated);
+}
+
+.gallery-card-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.gallery-card-thumb img.loaded {
+  opacity: 1;
+}
+
+.gallery-thumb-skeleton {
+  position: absolute;
+  inset: 0;
+}
+
+.gallery-card-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.gallery-card-thumb:hover .gallery-card-overlay {
+  opacity: 1;
+}
+
+.gallery-card-open-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #fff;
+  letter-spacing: 0.02em;
+}
+
+.gallery-card-meta {
+  padding: 10px 12px 12px;
+}
+
+.gallery-card-headline {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0 0 8px;
+  line-height: 1.35;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.gallery-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.gallery-card-archetype {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--archetype-color, var(--accent));
+  background: color-mix(in srgb, var(--archetype-color, var(--accent)) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--archetype-color, var(--accent)) 25%, transparent);
+  padding: 2px 7px;
+  border-radius: 100px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.gallery-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.gallery-card-time {
+  display: block;
+  font-size: 10px;
+  color: var(--text-muted);
+  margin-bottom: 6px;
+}
+
+.gallery-card-action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 0;
+  transition: border-color 0.15s, color 0.15s;
+  flex-shrink: 0;
+}
+
+.gallery-card-action-btn svg {
+  width: 11px;
+  height: 11px;
+}
+
+.gallery-card-action-btn:hover {
+  border-color: #06b6d4;
+  color: #06b6d4;
+}
+
+.gallery-card-action-btn--remove:hover {
+  border-color: var(--red);
+  color: var(--red);
+}
+
+/* ─── Ad Text Editor (inline in AdResult) ────────────────────────────────────── */
+
+.meta-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.meta-section-header h3 {
+  margin: 0;
+}
+
+.btn-edit-text {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: var(--radius);
+  border: 1.5px solid var(--border);
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.2s, color 0.2s, background 0.2s;
+  white-space: nowrap;
+}
+
+.btn-edit-text svg {
+  width: 13px;
+  height: 13px;
+  flex-shrink: 0;
+}
+
+.btn-edit-text:hover {
+  border-color: rgba(108, 99, 255, 0.5);
+  color: var(--accent);
+}
+
+.btn-edit-text--active {
+  border-color: rgba(239, 68, 68, 0.4);
+  color: var(--red, #ef4444);
+}
+
+.btn-edit-text--active:hover {
+  border-color: rgba(239, 68, 68, 0.7);
+  color: var(--red, #ef4444);
+}
+
+.ad-text-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  margin-bottom: 12px;
+}
+
+.edit-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.edit-field-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.edit-input {
+  width: 100%;
+  padding: 8px 12px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text-primary);
+  font-size: 13px;
+  font-family: inherit;
+  transition: border-color 0.2s;
+  box-sizing: border-box;
+}
+
+.edit-input:focus {
+  outline: none;
+  border-color: rgba(108, 99, 255, 0.5);
+}
+
+.edit-textarea {
+  width: 100%;
+  padding: 8px 12px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text-primary);
+  font-size: 13px;
+  font-family: inherit;
+  resize: vertical;
+  line-height: 1.5;
+  transition: border-color 0.2s;
+  box-sizing: border-box;
+}
+
+.edit-textarea:focus {
+  outline: none;
+  border-color: rgba(108, 99, 255, 0.5);
+}
+
+.edit-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.btn-apply-edit {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 9px 20px;
+  border-radius: var(--radius);
+  border: 1.5px solid rgba(16, 185, 129, 0.4);
+  background: rgba(16, 185, 129, 0.08);
+  color: #10b981;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.btn-apply-edit svg {
+  width: 14px;
+  height: 14px;
+}
+
+.btn-apply-edit:hover {
+  background: rgba(16, 185, 129, 0.16);
+  border-color: rgba(16, 185, 129, 0.65);
+}
+
+.btn-apply-edit--save {
+  border-color: rgba(108, 99, 255, 0.4);
+  background: rgba(108, 99, 255, 0.08);
+  color: var(--accent);
+}
+
+.btn-apply-edit--save:hover {
+  background: rgba(108, 99, 255, 0.16);
+  border-color: rgba(108, 99, 255, 0.65);
+}
+
+.preview-edited-badge {
+  display: inline-block;
+  margin-left: 8px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #f59e0b;
+  background: rgba(245, 158, 11, 0.1);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  padding: 1px 6px;
+  border-radius: 100px;
+  vertical-align: middle;
+}
+
+/* ─── Edit Modal ─────────────────────────────────────────────────────────────── */
+
+.edit-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.edit-modal {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: calc(var(--radius) + 4px);
+  width: 100%;
+  max-width: 780px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.5);
+}
+
+.edit-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 24px;
+  border-bottom: 1px solid var(--border);
+}
+
+.edit-modal-header h3 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.edit-modal-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+  padding: 0;
+}
+
+.edit-modal-close svg {
+  width: 14px;
+  height: 14px;
+}
+
+.edit-modal-close:hover {
+  border-color: var(--red, #ef4444);
+  color: var(--red, #ef4444);
+}
+
+.edit-modal-body {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  padding: 24px;
+}
+
+@media (max-width: 600px) {
+  .edit-modal-body {
+    grid-template-columns: 1fr;
+  }
+}
+
+.edit-modal-preview {
+  position: relative;
+  aspect-ratio: 1;
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: var(--bg-elevated);
+}
+
+.edit-modal-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.edit-modal-img.loaded {
+  opacity: 1;
+}
+
+.edit-modal-skeleton {
+  position: absolute;
+  inset: 0;
+  border-radius: 0;
+}
+
+.edit-modal-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.edit-modal-footer-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.edit-modal-footer-actions .gallery-card-action-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius);
+}
+
+.edit-modal-footer-actions .gallery-card-action-btn svg {
+  width: 15px;
+  height: 15px;
+}
