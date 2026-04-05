@@ -228,7 +228,7 @@ function AdResult({ cloudinaryUrl, imageUrl, copyAssets, blueprint, imageSummary
           </svg>
           Ad Generated
         </div>
-        <div className="result-header-pills">
+          <div className="result-header-pills">
           <div
             className="archetype-pill"
             style={{ '--archetype-color': archetypeMeta.color } as React.CSSProperties}
@@ -344,6 +344,8 @@ function AdResult({ cloudinaryUrl, imageUrl, copyAssets, blueprint, imageSummary
               </div>
             </div>
           )}
+
+
           <div className="insight-card">
             <div className="insight-icon">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -414,6 +416,7 @@ function AdResult({ cloudinaryUrl, imageUrl, copyAssets, blueprint, imageSummary
   );
 }
 
+
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 const ARCH_STRIP = ['Architect', 'Hunter', 'Observer', 'Aligner', 'Copywriter', 'Builder'] as const;
@@ -435,7 +438,6 @@ export function AdPipelineUI({ onBack, insightsContext, onInsightsConsumed }: {
   const [orgInput, setOrgInput] = useState<AdInput | null>(null);
   const [loadingOrg, setLoadingOrg] = useState(true);
   const [orgFetchError, setOrgFetchError] = useState<string | null>(null);
-  const [mission, setMission] = useState('');
 
   // Track which insights string we've already consumed so we never double-fire.
   const consumedInsightRef = useRef<string | null>(null);
@@ -460,7 +462,7 @@ export function AdPipelineUI({ onBack, insightsContext, onInsightsConsumed }: {
       }
 
       if (!data) {
-        setOrgFetchError('No organization found. Please register your organization first at /org/signup.');
+        setOrgFetchError('No organization found. Please register your organization first.');
         setLoadingOrg(false);
         return;
       }
@@ -468,9 +470,9 @@ export function AdPipelineUI({ onBack, insightsContext, onInsightsConsumed }: {
       setOrgInput({
         orgName:  data.legal_name || data.account_name || 'My Organization',
         sector:   data.sector    || 'Other',
-        mission:  '',
+        mission:  data.mission   || '',
         location: [data.city, data.province].filter(Boolean).join(', '),
-        contact:  [data.city, data.province].filter(Boolean).join(', '),
+        contact:  data.website || data.email || [data.city, data.province].filter(Boolean).join(', '),
       });
       setLoadingOrg(false);
     }
@@ -490,7 +492,7 @@ export function AdPipelineUI({ onBack, insightsContext, onInsightsConsumed }: {
 
     consumedInsightRef.current = insightsContext;
     onInsightsConsumed?.();
-    run({ ...orgInput, mission: '', insightsContext });
+    run({ ...orgInput, insightsContext });
   }, [insightsContext, orgInput, onInsightsConsumed, run]);
 
   const isProcessing = (
@@ -528,6 +530,7 @@ export function AdPipelineUI({ onBack, insightsContext, onInsightsConsumed }: {
       </div>
 
       <main className="pipeline-body">
+
         {/* ── Idle: show Generate button ── */}
         {step === 'idle' && (
           loadingOrg ? (
@@ -557,23 +560,9 @@ export function AdPipelineUI({ onBack, insightsContext, onInsightsConsumed }: {
                   {orgInput.location && <><span className="org-card-dot">·</span><span>{orgInput.location}</span></>}
                 </div>
               </div>
-              <div className="mission-group">
-                <label htmlFor="mission-input" className="mission-label">
-                  Mission statement <span className="mission-required">required</span>
-                </label>
-                <textarea
-                  id="mission-input"
-                  className="mission-textarea"
-                  rows={3}
-                  placeholder="Briefly describe what your organization does and who it serves…"
-                  value={mission}
-                  onChange={e => setMission(e.target.value)}
-                />
-              </div>
               <button
                 className="btn-generate"
-                disabled={!mission.trim()}
-                onClick={() => run({ ...orgInput, mission: mission.trim(), insightsContext })}
+                onClick={() => run({ ...orgInput, insightsContext })}
               >
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />

@@ -1,10 +1,12 @@
 import { useState, type FormEvent } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabaseClient'
 
 export interface OrgSignupData {
   BN: string
   legal_name: string
   account_name: string
+  mission: string
   address1: string
   address2: string
   city: string
@@ -41,6 +43,7 @@ const EMPTY_FORM: OrgSignupData = {
   BN: '',
   legal_name: '',
   account_name: '',
+  mission: '',
   address1: '',
   address2: '',
   city: '',
@@ -51,11 +54,12 @@ const EMPTY_FORM: OrgSignupData = {
 }
 
 export default function OrgSignup({ onSubmit }: OrgSignupProps) {
+  const navigate = useNavigate()
   const [form, setForm] = useState<OrgSignupData>(EMPTY_FORM)
   const [status, setStatus] = useState<'idle' | 'submitting' | 'success' | 'error'>('idle')
   const [errorMsg, setErrorMsg] = useState('')
 
-  function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) {
+  function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) {
     setForm(prev => ({ ...prev, [e.target.name]: e.target.value }))
   }
 
@@ -65,10 +69,11 @@ export default function OrgSignup({ onSubmit }: OrgSignupProps) {
     setErrorMsg('')
     try {
       if (!supabase) throw new Error('Supabase not configured.')
-      const { error } = await supabase.from('organizers').insert({
+      const { error } = await supabase.from('organizations').insert({
         bn: form.BN,
         legal_name: form.legal_name,
         account_name: form.account_name,
+        mission: form.mission || null,
         address1: form.address1,
         address2: form.address2 || null,
         city: form.city,
@@ -79,39 +84,22 @@ export default function OrgSignup({ onSubmit }: OrgSignupProps) {
       })
       if (error) throw new Error(error.message)
       await onSubmit?.(form)
-      setStatus('success')
+      navigate('/org')
     } catch (err) {
       setStatus('error')
       setErrorMsg(err instanceof Error ? err.message : 'Something went wrong. Please try again.')
     }
   }
 
-  if (status === 'success') {
-    return (
-      <div className="min-h-screen bg-[#002855] flex flex-col">
-        <header className="border-b border-[#1A3A52] px-4 py-3">
-          <p className="text-xs font-bold tracking-widest text-[#8B9DB5] uppercase">Organizer</p>
-        </header>
-        <div className="flex-1 flex items-center justify-center px-4">
-          <div
-            role="alert"
-            aria-live="polite"
-            className="max-w-sm w-full border border-[#A9CEE8] rounded-2xl p-8 text-center shadow-sm bg-[#1A3A52]"
-          >
-            <p className="text-xs font-bold tracking-widest text-[#8B9DB5] uppercase mb-3">Registered</p>
-            <p className="font-semibold text-white text-sm">{form.legal_name}</p>
-            <p className="text-xs text-[#8B9DB5] mt-1">Your organization has been added.</p>
-          </div>
-        </div>
-      </div>
-    )
-  }
 
   return (
     <div className="min-h-screen bg-[#002855] flex flex-col">
       {/* Header — matches dashboard */}
       <header className="border-b border-[#1A3A52] px-4 py-3">
-        <p className="text-xs font-bold tracking-widest text-[#8B9DB5] uppercase">Organizer</p>
+        <div className="flex flex-col items-start">
+          <img src="/logo.png" alt="Relinkd logo" className="h-16 w-16 rounded-xl object-contain" />
+          <span className="text-sm font-bold text-white tracking-tight mt-1">Relinkd</span>
+        </div>
       </header>
 
       {/* Form card */}
@@ -135,6 +123,7 @@ export default function OrgSignup({ onSubmit }: OrgSignupProps) {
                   <Field id="legal_name" name="legal_name" label="Legal name" value={form.legal_name} onChange={handleChange} autoComplete="organization" required />
                   <Field id="account_name" name="account_name" label="Account / operating name" value={form.account_name} onChange={handleChange} required />
                   <Field id="BN" name="BN" label="Business Number (BN)" value={form.BN} onChange={handleChange} placeholder="123456789" required />
+                  <TextAreaField id="mission" name="mission" label="Mission statement" value={form.mission} onChange={handleChange} placeholder="Briefly describe your organization's mission…" />
                 </fieldset>
 
                 <hr className="border-[#4A7BA7]" />
@@ -243,6 +232,36 @@ interface SelectFieldProps {
   autoComplete?: string
   required?: boolean
   children: React.ReactNode
+}
+
+interface TextAreaFieldProps {
+  id: string
+  name: string
+  label: string
+  value: string
+  onChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void
+  placeholder?: string
+}
+
+function TextAreaField({ id, name, label, value, onChange, placeholder }: TextAreaFieldProps) {
+  return (
+    <div>
+      <label htmlFor={id} className="block text-xs font-semibold text-[#A9CEE8] mb-1.5">
+        {label}
+      </label>
+      <textarea
+        id={id}
+        name={name}
+        value={value}
+        onChange={onChange}
+        placeholder={placeholder}
+        rows={3}
+        className="w-full border border-[#4A7BA7] rounded-xl text-white text-sm px-3 py-2.5
+                   focus:outline-none focus:border-[#0070E0] focus:ring-1 focus:ring-[#0070E0]
+                   placeholder:text-[#4A7BA7] bg-[#002855] resize-none"
+      />
+    </div>
+  )
 }
 
 function SelectField({ id, name, label, value, onChange, autoComplete, required, children }: SelectFieldProps) {

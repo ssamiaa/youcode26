@@ -73,7 +73,10 @@ export default function OrgDashboard() {
   return (
     <div className="h-screen bg-[#002855] flex flex-col overflow-hidden">
       <header className="border-b border-[#1A3A52] px-4 py-3 flex items-center justify-between bg-[#002855]">
-        <p className="text-xs font-bold tracking-widest text-[#8B9DB5] uppercase">Organizer</p>
+        <div className="flex flex-col items-start">
+          <img src="/logo.png" alt="Relinkd logo" className="h-16 w-16 rounded-xl object-contain" />
+          <span className="text-sm font-bold text-white tracking-tight mt-1">Relinkd</span>
+        </div>
         <ImportCSV />
       </header>
 
