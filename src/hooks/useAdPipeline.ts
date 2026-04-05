@@ -160,7 +160,7 @@ const LAYOUT_SLOTS: Record<ScrimStyle, Partial<Record<SlotName, SlotPosition>>> 
   // ── band-north ──  Band occupies top 340px.
   // eyebrow near the top, headline fills the band, CTA far south for contrast.
   'band-north': {
-    eyebrow:  { size: 20, gravity: 'north', y:  38, x:  0, width: 880 },
+    eyebrow:  { size: 26, gravity: 'north', y:  38, x:  0, width: 880 },
     headline: { size: 58, gravity: 'north', y: 140, x:  0, width: 900 },
     cta:      { size: 30, gravity: 'south', y: 150, x:  0, width: 400 },
   },
@@ -168,21 +168,21 @@ const LAYOUT_SLOTS: Record<ScrimStyle, Partial<Record<SlotName, SlotPosition>>> 
   // y = signed offset from vertical center (negative = above).
   // Headline pulled up and body shrunk to 20px so all four slots breathe.
   'panel-left': {
-    eyebrow:  { size: 20, gravity: 'west', y: -270, x: 26, width: 390 },
+    eyebrow:  { size: 26, gravity: 'west', y: -270, x: 26, width: 390 },
     headline: { size: 48, gravity: 'west', y: -135, x: 26, width: 390 },
     body:     { size: 20, gravity: 'west', y:   30, x: 26, width: 390 },
     cta:      { size: 30, gravity: 'west', y:  175, x: 26, width: 360 },
   },
   // ── panel-right ──  Mirror of panel-left.
   'panel-right': {
-    eyebrow:  { size: 20, gravity: 'east', y: -270, x: 26, width: 390 },
+    eyebrow:  { size: 26, gravity: 'east', y: -270, x: 26, width: 390 },
     headline: { size: 48, gravity: 'east', y: -135, x: 26, width: 390 },
     body:     { size: 20, gravity: 'east', y:   30, x: 26, width: 390 },
     cta:      { size: 30, gravity: 'east', y:  175, x: 26, width: 360 },
   },
   // ── full ──  Wash over entire image. All slots use center gravity.
   'full': {
-    eyebrow:  { size: 20, gravity: 'center', y: -175, x: 0, width: 880 },
+    eyebrow:  { size: 26, gravity: 'center', y: -175, x: 0, width: 880 },
     headline: { size: 64, gravity: 'center', y:  -60, x: 0, width: 900 },
     cta:      { size: 30, gravity: 'center', y:   78, x: 0, width: 340 },
     body:     { size: 24, gravity: 'center', y:  155, x: 0, width: 880 },
@@ -190,7 +190,7 @@ const LAYOUT_SLOTS: Record<ScrimStyle, Partial<Record<SlotName, SlotPosition>>> 
   // ── dual ──  Thin north band (200px) + normal south band (340px). No body — south band
   // already carries headline + CTA and has no room for a third text element.
   'dual': {
-    eyebrow:  { size: 20, gravity: 'north', y:  78, x: 0, width: 600 },
+    eyebrow:  { size: 26, gravity: 'north', y:  78, x: 0, width: 600 },
     headline: { size: 56, gravity: 'south', y: 275, x: 0, width: 900 },
     cta:      { size: 30, gravity: 'south', y: 150, x: 0, width: 400 },
   },
@@ -236,7 +236,7 @@ const LAYOUT_SLOT_GUIDES: Record<ScrimStyle, string> = {
     "eyebrow"  — small sector or org label at the top             (optional)
     "headline" — dominant large text in the centre                (REQUIRED)
     "cta"      — call-to-action below the headline                (REQUIRED)
-    "body"     — short supporting sentence below the CTA          (optional, maxBodyChars: 90–110)`,
+    "body"     — short supporting sentence below the CTA          (optional)`,
 
   'dual': `Thin band at TOP AND BOTTOM; clean photo visible in the middle.
   Available slots:
@@ -357,6 +357,44 @@ function pickArchetype(): AdArchetype {
   return ARCHETYPES[Math.floor(Math.random() * ARCHETYPES.length)];
 }
 
+// ─── Visual Profile Picker ────────────────────────────────────────────────────
+
+type CtaStyle     = 'plain' | 'rounded' | 'pill';
+type EyebrowStyle = 'plain' | 'sharp-badge' | 'pill-label';
+
+interface AdProfile {
+  name:           string;
+  includeEyebrow: boolean;
+  includeBody:    boolean;
+  eyebrowStyle:   EyebrowStyle;
+  ctaStyle:       CtaStyle;
+  headlineFont:   FontFamily;
+}
+
+/**
+ * Six visually distinct profiles. Each locks the structural and typographic
+ * decisions that the AI would otherwise homogenise. Picked randomly per run.
+ *
+ *  stark       — Impact headline, NO eyebrow/body, plain floating CTA text
+ *  editorial   — Georgia, sharp-badge eyebrow, NO body, pill CTA
+ *  documentary — Courier, sharp-badge eyebrow, WITH body, plain CTA text
+ *  warm        — Verdana, italic plain eyebrow, WITH body, softly-rounded CTA
+ *  legacy      — Georgia, pill-label eyebrow, NO body, rounded CTA
+ *  full-kit    — Arial, plain eyebrow, WITH body, pill CTA
+ */
+const AD_PROFILES: AdProfile[] = [
+  { name: 'stark',       includeEyebrow: false, includeBody: false, eyebrowStyle: 'plain',       ctaStyle: 'plain',   headlineFont: 'Impact'  },
+  { name: 'editorial',   includeEyebrow: true,  includeBody: false, eyebrowStyle: 'sharp-badge', ctaStyle: 'pill',    headlineFont: 'Georgia' },
+  { name: 'documentary', includeEyebrow: true,  includeBody: true,  eyebrowStyle: 'sharp-badge', ctaStyle: 'plain',   headlineFont: 'Courier' },
+  { name: 'warm',        includeEyebrow: true,  includeBody: true,  eyebrowStyle: 'plain',       ctaStyle: 'rounded', headlineFont: 'Verdana' },
+  { name: 'legacy',      includeEyebrow: true,  includeBody: false, eyebrowStyle: 'pill-label',  ctaStyle: 'rounded', headlineFont: 'Georgia' },
+  { name: 'full-kit',    includeEyebrow: true,  includeBody: true,  eyebrowStyle: 'plain',       ctaStyle: 'pill',    headlineFont: 'Arial'   },
+];
+
+function pickAdProfile(): AdProfile {
+  return AD_PROFILES[Math.floor(Math.random() * AD_PROFILES.length)];
+}
+
 async function runArchitect(
   input: AdInput,
   focusedInsight: string | null,
@@ -453,7 +491,8 @@ async function runCopywriter(
   blueprint: PostBlueprint,
   finalIdea: string,
   imageSummary: string,
-  scrimStyle: ScrimStyle
+  scrimStyle: ScrimStyle,
+  profile: AdProfile,
 ): Promise<CopyAssets> {
   finalIdea = decodeModelEscapesInCopy(finalIdea);
 
@@ -463,6 +502,30 @@ async function runCopywriter(
     'Community-Seeker': 'scrim "1a3a22" forest green — CTA accent "fbbf24" gold or "fb923c" warm orange',
     'Legacy-Maker':     'scrim "2d1b4e" deep violet — CTA accent "e879f9" fuchsia or "f59e0b" warm amber',
   };
+
+  // Build the profile-specific slot + styling instructions.
+  const profileSlots = ['headline (REQUIRED)', 'cta (REQUIRED)'];
+  if (profile.includeEyebrow) profileSlots.push('eyebrow (INCLUDE)');
+  if (profile.includeBody)    profileSlots.push('body    (INCLUDE)');
+
+  const ctaStyleGuide: Record<CtaStyle, string> = {
+    plain:   'CTA: plain floating text — NO background, NO backgroundRadius. Let it breathe.',
+    rounded: 'CTA: solid colour background, backgroundRadius: 8 (gently rounded button).',
+    pill:    'CTA: solid colour background, backgroundRadius: 40 (pill-shaped button).',
+  };
+  const eyebrowStyleGuide: Record<EyebrowStyle, string> = {
+    plain:         'Eyebrow: plain text, NO background. Use italic for elegance.',
+    'sharp-badge': 'Eyebrow: solid colour background, backgroundRadius: 0 (sharp stat-box badge).',
+    'pill-label':  'Eyebrow: solid colour background, backgroundRadius: 40 (soft pill label).',
+  };
+
+  const profileSection = `
+─── PRE-SELECTED VISUAL PROFILE: ${profile.name.toUpperCase()} ─────────────────────────────────────
+Slots to render — include ONLY these, no others:
+  ${profileSlots.join('\n  ')}
+Headline font: "${profile.headlineFont}" — FIXED, do not change it.
+${ctaStyleGuide[profile.ctaStyle]}
+${profile.includeEyebrow ? eyebrowStyleGuide[profile.eyebrowStyle] : ''}`;
 
   const system = `You are an award-winning non-profit creative director. Your ads stop people mid-scroll. Every word is deliberate, every colour choice is intentional.
 
@@ -487,29 +550,26 @@ ${LAYOUT_SLOT_GUIDES[scrimStyle]}
 The scrimStyle is FIXED — you must echo "${scrimStyle}" unchanged in your JSON.
 Each layer uses one named slot from the list above.
 Do NOT invent slot names outside the list.
-USE ALL OPTIONAL SLOTS — they add depth and professionalism.
+${profileSection}
 
 ─── CREATIVE CHOICES PER LAYER ────────────────────────────────────────────────
-fontFamily — choose deliberately to match the feeling:
-  "Impact"      — condensed, raw power. Use for urgent, defiant headlines. Do NOT also set bold=true.
-  "Georgia"     — authoritative serif gravitas. Use for Legacy-Maker or trust-heavy campaigns.
-  "Verdana"     — warm, open, humanist. Use for Community-Seeker or welcoming tones.
-  "Courier"     — documentary rawness. Use for stat-anchored, data-driven copy.
-  "Arial"       — clean fallback. Use when nothing else fits better.
+fontFamily — the headline font is fixed by the profile above. For body and eyebrow you may choose:
+  "Impact"   — condensed power. Use only for eyebrow stat labels.
+  "Georgia"  — serif gravitas.
+  "Verdana"  — warm humanist.
+  "Courier"  — documentary rawness.
+  "Arial"    — clean fallback.
 
 bold / italic: combine freely. Impact ignores bold visually — skip it.
-Italic works beautifully on eyebrow chips and body excerpts.
+Italic works beautifully on plain eyebrow and body text.
 
 colorHex: make it sing against the image.
   Dark/medium image → "ffffff" bright white OR a warm tone like "fef3c7"
   Light/washed image → "1a1a2e" near-black OR a deep saturated color like "1e3a5f"
   Never use grey text — it reads as timid.
 
-background (strongly encouraged for CTA): solid colour box makes the CTA feel like a real button.
-  ALWAYS pair with a high-contrast colorHex.
+background — only set if the profile above specifies a background for that slot.
   Palette: "f59e0b" amber, "fbbf24" gold, "dc2626" red, "16a34a" green, "2563eb" blue, "7c3aed" violet, "0891b2" teal, "ea580c" burnt orange
-
-backgroundRadius: 0=sharp rectangle, 8=softly rounded, 40=pill. Pill (40) for CTAs, sharp (0) for eyebrow stat boxes.
 
 opacity: 100 for headline/cta. 78–88 for body/eyebrow (subtle layering).
 
@@ -575,28 +635,66 @@ Return exactly this shape:
 
   spec.layers = Array.isArray(spec.layers) ? spec.layers : [];
   spec.layers = spec.layers
-    .filter(l => l && validSlotNames.includes(l.slot as SlotName) && validSources.includes(l.textSource))
-    .map(l => ({
-      slot:             l.slot as SlotName,
-      textSource:       l.textSource,
-      customText:       l.customText != null && l.customText !== ''
-        ? decodeModelEscapesInCopy(String(l.customText))
-        : undefined,
-      maxBodyChars:     l.maxBodyChars,
-      fontFamily:       validFonts.includes(l.fontFamily as FontFamily) ? l.fontFamily : undefined,
-      bold:             !!l.bold,
-      italic:           !!l.italic,
-      colorHex:         ((l.colorHex ?? 'ffffff') as string).replace(/^#/, '').slice(0, 6) || 'ffffff',
-      opacity:          Math.max(50, Math.min(100, Math.round(Number(l.opacity) || 100))),
-      background:       l.background ? (l.background as string).replace(/^#/, '').slice(0, 6) : undefined,
-      backgroundRadius: l.background && l.backgroundRadius != null
+    .filter(l => {
+      if (!l) return false;
+      if (!validSlotNames.includes(l.slot as SlotName)) return false;
+      if (!validSources.includes(l.textSource)) return false;
+      // Strip slots the profile explicitly excludes.
+      if (l.slot === 'eyebrow' && !profile.includeEyebrow) return false;
+      if (l.slot === 'body'    && !profile.includeBody)    return false;
+      return true;
+    })
+    .map(l => {
+      // Force headline font to the profile's choice.
+      const resolvedFont: FontFamily | undefined =
+        l.slot === 'headline'
+          ? profile.headlineFont
+          : (validFonts.includes(l.fontFamily as FontFamily) ? l.fontFamily : undefined);
+
+      // Apply profile CTA styling.
+      let bg        = l.background ? (l.background as string).replace(/^#/, '').slice(0, 6) : undefined;
+      let bgRadius  = (l.background && l.backgroundRadius != null)
         ? Math.max(0, Math.min(40, Math.round(Number(l.backgroundRadius))))
-        : undefined,
-    }));
+        : undefined;
+
+      if (l.slot === 'cta') {
+        if (profile.ctaStyle === 'plain') { bg = undefined; bgRadius = undefined; }
+        else if (profile.ctaStyle === 'rounded' && bg) bgRadius = 8;
+        else if (profile.ctaStyle === 'pill'    && bg) bgRadius = 40;
+      }
+
+      // Apply profile eyebrow styling.
+      if (l.slot === 'eyebrow') {
+        if (profile.eyebrowStyle === 'plain') { bg = undefined; bgRadius = undefined; }
+        else if (profile.eyebrowStyle === 'sharp-badge' && bg) bgRadius = 0;
+        else if (profile.eyebrowStyle === 'pill-label'  && bg) bgRadius = 40;
+      }
+
+      return {
+        slot:             l.slot as SlotName,
+        textSource:       l.textSource,
+        customText:       l.customText != null && l.customText !== ''
+          ? decodeModelEscapesInCopy(String(l.customText))
+          : undefined,
+        maxBodyChars:     l.maxBodyChars,
+        fontFamily:       resolvedFont,
+        bold:             l.slot === 'headline' && profile.headlineFont === 'Impact' ? false : !!l.bold,
+        italic:           !!l.italic,
+        colorHex:         ((l.colorHex ?? 'ffffff') as string).replace(/^#/, '').slice(0, 6) || 'ffffff',
+        opacity:          Math.max(50, Math.min(100, Math.round(Number(l.opacity) || 100))),
+        background:       bg,
+        backgroundRadius: bgRadius,
+      };
+    });
 
   // Ensure the two required slots are always present.
   if (!spec.layers.some(l => l.slot === 'headline')) {
-    spec.layers.unshift({ slot: 'headline', textSource: 'headline', bold: true, colorHex: 'ffffff', opacity: 100 });
+    spec.layers.unshift({
+      slot: 'headline', textSource: 'headline',
+      fontFamily: profile.headlineFont,
+      bold: profile.headlineFont !== 'Impact',
+      colorHex: 'ffffff', opacity: 100,
+    });
   }
   if (!spec.layers.some(l => l.slot === 'cta')) {
     const ctaAccents: Record<AdArchetype, string> = {
@@ -605,9 +703,13 @@ Return exactly this shape:
       'Legacy-Maker':     '7c3aed',
     };
     const accent = ctaAccents[blueprint.archetype] ?? 'f59e0b';
+    const fallbackBg        = profile.ctaStyle !== 'plain' ? accent   : undefined;
+    const fallbackBgRadius  = profile.ctaStyle === 'pill'  ? 40
+                            : profile.ctaStyle === 'rounded' ? 8       : undefined;
     spec.layers.push({
       slot: 'cta', textSource: 'cta', bold: true,
-      colorHex: '1a1a2e', opacity: 100, background: accent, backgroundRadius: 40,
+      colorHex: '1a1a2e', opacity: 100,
+      background: fallbackBg, backgroundRadius: fallbackBgRadius,
     });
   }
 
@@ -687,7 +789,10 @@ function buildTextLayer(layer: LayerCreative, pos: SlotPosition, assets: CopyAss
   if (layer.background) {
     t += `,b_rgb:${layer.background}`;
   }
-  t += `,l_text:${fontSpec}:${text},w_${pos.width},c_fit`;
+  // When a background box is present, pad the text with non-breaking spaces so the
+  // background colour has horizontal and vertical breathing room around the glyphs.
+  const paddedText = layer.background ? `%C2%A0%C2%A0${text}%C2%A0%C2%A0` : text;
+  t += `,l_text:${fontSpec}:${paddedText},w_${pos.width},c_fit`;
   if (layer.background && layer.backgroundRadius != null) {
     t += `,r_${layer.backgroundRadius}`;
   }
@@ -790,7 +895,8 @@ export function useAdPipeline() {
         : await runAligner(blueprint, imageSummary);
       patch({ alignment, step: 'writing', stepMessage: `Writing copy for ${scrimStyle} layout...` });
 
-      const copyAssets = await runCopywriter(input, blueprint, alignment.revisedIdea, imageSummary, scrimStyle);
+      const profile = pickAdProfile();
+      const copyAssets = await runCopywriter(input, blueprint, alignment.revisedIdea, imageSummary, scrimStyle, profile);
       patch({ copyAssets, step: 'building', stepMessage: 'Assembling final ad...' });
 
       const cloudinaryUrl = buildCloudinaryUrl(copyAssets, input, imageUrl);
