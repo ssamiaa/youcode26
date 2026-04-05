@@ -65,9 +65,32 @@ Write one sentence (max 25 words) explaining why this is a good match. Be specif
         }]
       })
       const reason = response.content[0].type === 'text' ? response.content[0].text : ''
-      return { ...volunteer, reason }
+      return { 
+        ...volunteer, 
+        reason,
+        match_score: volunteer.score,
+        match_reason: reason,
+        skills: volunteer.skills?.split(';').map((s: string) => s.trim()) ?? [],
+        languages_spoken: volunteer.languages_spoken?.split(';').map((l: string) => l.trim()) ?? [],
+      }
     })
   )
+  const tagResponse = await client.messages.create({
+    model: 'claude-haiku-4-5-20251001',
+    max_tokens: 20,
+    messages: [{
+      role: 'user',
+      content: `Summarise this volunteer need in 2-4 words max, like a tag. No punctuation. Example: "Cantonese elder care weekends". Need: ${message}`
+    }]
+  })
+  const session_tag = tagResponse.content[0].type === 'text' ? tagResponse.content[0].text.trim() : ''
+  
+  // Return reply + volunteers + session tag
+  return res.json({
+    reply: `I found ${withReasons.length} great matches for you!`,
+    volunteers: withReasons,
+    session_tag
+  })
 
   // Return reply + volunteers so the UI can show match cards
   return res.json({
