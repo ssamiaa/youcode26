@@ -352,8 +352,8 @@ async function runCopywriter(
   const system = `You are a non-profit copywriter AND visual layout designer. You write the ad copy AND specify exactly how it should be rendered on the image by Phase 6 (the Cloudinary Builder).
 
 ─── COPY RULES ────────────────────────────────────────────────────────────────
-- headline: 5–10 words. Lead with a question, striking image detail, number, or the org name. No end-punctuation.
-- body: 2–3 sentences. Name the org, include one concrete detail (stat, place, outcome), and end with an implicit call-to-action.
+- headline: MAX 6 words. Shorter text prevents wrapping and overlap. Active voice, no end-punctuation.
+- body: 2–3 sentences. Name the org, include one concrete detail (stat, place, outcome), implicit CTA.
 - cta: 3–6 words, action verb first. Be specific — not "Donate now" but "Give two hours this Saturday".
 
 ─── BUILDER SPEC RULES ────────────────────────────────────────────────────────
@@ -393,12 +393,12 @@ fontFamily (optional, default "Arial"):
 
 bold / italic: combine freely. Impact is already visually heavy; avoid bold+Impact.
 
-size: 16–80 px. Guidelines:
-  eyebrow / label  → 16–22
-  body excerpt     → 22–28
-  CTA              → 26–34
-  headline         → 38–68
-  hero/single-word → up to 80
+size (px) — use these MINIMUM values, go larger for impact:
+  eyebrow / label  → 18–22  (never below 18)
+  body excerpt     → 24–28  (never below 24)
+  CTA              → 30–36  (never below 30)
+  headline         → 52–68  (NEVER below 52 — small headlines look broken)
+  hero/single-word → 68–80
 
 background (optional hex): draws a solid colour box BEHIND this layer's text.
   Use for CTA badge/pills, eyebrow chips, stat callouts.
@@ -410,36 +410,67 @@ backgroundRadius (optional int 0–40): rounded corners of the background box.
   0 = sharp rectangle, 6–10 = subtle rounding, 40 = pill.
   Only applies when background is set.
 
+─── SPACING — CRITICAL, MUST FOLLOW ───────────────────────────────────────────
+Text wraps inside its bounding box (w_). A 56px headline at w=900 can easily
+span 2 lines (~140px tall). ALWAYS design for worst-case 2-line headline wrap.
+
+MINIMUM y-GAPS between adjacent layers sharing the same gravity band:
+  south / north bands  → 140px between each layer's y values
+  center / full        → 140px between each layer's y values
+  west / east panels   → 200px between each layer's y values
+
+SOUTH-BAND ZONE — follow these exact bounds:
+  footer bar occupies the bottom 100px. Text below y=140 will overlap the footer.
+  • CTA y:       148–165  (safe zone just above the footer bar)
+  • Headline y:  295–320  (CTA y + at least 140)
+  • 3rd layer:   headline y + at least 140 (place above the band if needed)
+
+NORTH-BAND ZONE:
+  • Eyebrow y:   38–45   (from top edge)
+  • Headline y:  88–105  (eyebrow y + at least 50, or start here if no eyebrow)
+  • CTA:         place at south band (y=148–165) so it doesn't crowd the top
+
+PANEL ZONE (west / east):
+  • Labels:   y = -280 to -250 (well above center)
+  • Headline: y = -130 to -100 (upper-middle)
+  • Body:     y = 20 to 50    (just below center)
+  • CTA:      y = 130 to 160  (lower area)
+
+FULL OVERLAY (center gravity):
+  • Eyebrow:  y = -200 to -160
+  • Headline: y = -80  to -50
+  • CTA:      y = 70   to 90
+
 ─── LAYER POSITIONING EXAMPLES ────────────────────────────────────────────────
 
-  band-south (2 layers, Impact headline + amber CTA badge):
-    { "textSource":"headline", "fontFamily":"Impact", "size":60, "bold":false, "gravity":"south", "y":210, "x":0, "width":920, "colorHex":"ffffff", "opacity":100 }
-    { "textSource":"cta", "size":28, "bold":true, "gravity":"south", "y":118, "x":0, "width":360, "colorHex":"1a1a2e", "opacity":100, "background":"f59e0b", "backgroundRadius":8 }
+  band-south (2 layers — Impact headline + amber CTA badge, well-spaced):
+    { "textSource":"headline", "fontFamily":"Impact", "size":62, "bold":false, "gravity":"south", "y":305, "x":0, "width":900, "colorHex":"ffffff", "opacity":100 }
+    { "textSource":"cta", "fontFamily":"Arial", "size":30, "bold":true, "gravity":"south", "y":155, "x":0, "width":380, "colorHex":"1a1a2e", "opacity":100, "background":"f59e0b", "backgroundRadius":8 }
 
-  band-north (3 layers — eyebrow chip + Georgia headline at top, CTA badge at bottom):
-    { "textSource":"custom", "customText":"VOLUNTEER OPPORTUNITY", "size":18, "bold":false, "gravity":"north", "y":44, "x":0, "width":880, "colorHex":"000000", "opacity":100, "background":"fbbf24", "backgroundRadius":4 }
-    { "textSource":"headline", "fontFamily":"Georgia", "size":48, "bold":true, "italic":true, "gravity":"north", "y":82, "x":0, "width":920, "colorHex":"ffffff", "opacity":100 }
-    { "textSource":"cta", "size":28, "bold":true, "gravity":"south", "y":108, "x":0, "width":920, "colorHex":"ffffff", "opacity":85 }
+  band-north (3 layers — eyebrow chip + Georgia headline at top, CTA badge well below):
+    { "textSource":"custom", "customText":"VOLUNTEER OPPORTUNITY", "size":19, "bold":false, "gravity":"north", "y":40, "x":0, "width":880, "colorHex":"000000", "opacity":100, "background":"fbbf24", "backgroundRadius":4 }
+    { "textSource":"headline", "fontFamily":"Georgia", "size":54, "bold":true, "italic":true, "gravity":"north", "y":96, "x":0, "width":900, "colorHex":"ffffff", "opacity":100 }
+    { "textSource":"cta", "fontFamily":"Arial", "size":30, "bold":true, "gravity":"south", "y":155, "x":0, "width":900, "colorHex":"ffffff", "opacity":88 }
 
-  panel-left (3 layers inside the left column):
-    { "textSource":"custom", "customText":"FOOD SECURITY", "size":18, "bold":false, "gravity":"west", "y":-240, "x":28, "width":400, "colorHex":"000000", "opacity":100, "background":"ffffff", "backgroundRadius":4 }
-    { "textSource":"headline", "fontFamily":"Verdana", "size":40, "bold":true, "gravity":"west", "y":-140, "x":28, "width":404, "colorHex":"ffffff", "opacity":100 }
-    { "textSource":"cta", "size":26, "bold":true, "gravity":"west", "y":100, "x":28, "width":400, "colorHex":"1a1a2e", "opacity":100, "background":"ffffff", "backgroundRadius":6 }
+  panel-left (3 layers — label + headline + CTA, all within left column):
+    { "textSource":"custom", "customText":"FOOD SECURITY", "size":19, "bold":false, "gravity":"west", "y":-265, "x":28, "width":390, "colorHex":"000000", "opacity":100, "background":"ffffff", "backgroundRadius":4 }
+    { "textSource":"headline", "fontFamily":"Verdana", "size":52, "bold":true, "gravity":"west", "y":-100, "x":28, "width":390, "colorHex":"ffffff", "opacity":100 }
+    { "textSource":"cta", "fontFamily":"Arial", "size":30, "bold":true, "gravity":"west", "y":130, "x":28, "width":350, "colorHex":"1a1a2e", "opacity":100, "background":"ffffff", "backgroundRadius":6 }
 
-  panel-right (3 layers):
-    { "textSource":"headline", "fontFamily":"Georgia", "size":42, "bold":true, "gravity":"east", "y":-150, "x":28, "width":404, "colorHex":"ffffff", "opacity":100 }
-    { "textSource":"body_excerpt", "maxBodyChars":60, "fontFamily":"Georgia", "size":22, "bold":false, "italic":true, "gravity":"east", "y":-28, "x":28, "width":400, "colorHex":"ffffff", "opacity":80 }
-    { "textSource":"cta", "size":26, "bold":true, "gravity":"east", "y":100, "x":28, "width":320, "colorHex":"000000", "opacity":100, "background":"f59e0b", "backgroundRadius":8 }
+  panel-right (3 layers — headline + body excerpt + CTA badge):
+    { "textSource":"headline", "fontFamily":"Georgia", "size":52, "bold":true, "gravity":"east", "y":-120, "x":28, "width":390, "colorHex":"ffffff", "opacity":100 }
+    { "textSource":"body_excerpt", "maxBodyChars":55, "fontFamily":"Georgia", "size":24, "bold":false, "italic":true, "gravity":"east", "y":40, "x":28, "width":390, "colorHex":"ffffff", "opacity":80 }
+    { "textSource":"cta", "fontFamily":"Arial", "size":30, "bold":true, "gravity":"east", "y":155, "x":28, "width":320, "colorHex":"000000", "opacity":100, "background":"f59e0b", "backgroundRadius":8 }
 
-  full overlay:
-    { "textSource":"custom", "customText":"MENTAL HEALTH NONPROFIT", "size":17, "bold":false, "fontFamily":"Courier_New", "gravity":"center", "y":-130, "x":0, "width":880, "colorHex":"ffffff", "opacity":65 }
-    { "textSource":"headline", "fontFamily":"Impact", "size":64, "bold":false, "gravity":"center", "y":-40, "x":0, "width":920, "colorHex":"ffffff", "opacity":100 }
-    { "textSource":"cta", "size":28, "bold":true, "gravity":"center", "y":58, "x":0, "width":320, "colorHex":"ffffff", "opacity":100, "background":"dc2626", "backgroundRadius":40 }
+  full overlay (3 layers — sector label + large headline + CTA pill):
+    { "textSource":"custom", "customText":"MENTAL HEALTH NONPROFIT", "size":19, "bold":false, "fontFamily":"Courier_New", "gravity":"center", "y":-175, "x":0, "width":880, "colorHex":"ffffff", "opacity":65 }
+    { "textSource":"headline", "fontFamily":"Impact", "size":64, "bold":false, "gravity":"center", "y":-65, "x":0, "width":900, "colorHex":"ffffff", "opacity":100 }
+    { "textSource":"cta", "fontFamily":"Arial", "size":30, "bold":true, "gravity":"center", "y":78, "x":0, "width":340, "colorHex":"ffffff", "opacity":100, "background":"dc2626", "backgroundRadius":40 }
 
-  dual (eyebrow chip at top, headline + CTA badge at bottom):
-    { "textSource":"custom", "customText":"JOIN US THIS WEEKEND", "size":20, "bold":false, "gravity":"north", "y":82, "x":0, "width":600, "colorHex":"000000", "opacity":100, "background":"ffffff", "backgroundRadius":4 }
-    { "textSource":"headline", "fontFamily":"Georgia", "size":50, "bold":true, "gravity":"south", "y":200, "x":0, "width":920, "colorHex":"ffffff", "opacity":100 }
-    { "textSource":"cta", "size":26, "bold":true, "gravity":"south", "y":112, "x":0, "width":300, "colorHex":"1a1a2e", "opacity":100, "background":"fbbf24", "backgroundRadius":40 }
+  dual (eyebrow chip at top band, headline + CTA in south band):
+    { "textSource":"custom", "customText":"JOIN US THIS WEEKEND", "size":20, "bold":false, "gravity":"north", "y":78, "x":0, "width":600, "colorHex":"000000", "opacity":100, "background":"ffffff", "backgroundRadius":4 }
+    { "textSource":"headline", "fontFamily":"Georgia", "size":56, "bold":true, "gravity":"south", "y":305, "x":0, "width":900, "colorHex":"ffffff", "opacity":100 }
+    { "textSource":"cta", "fontFamily":"Arial", "size":30, "bold":true, "gravity":"south", "y":155, "x":0, "width":320, "colorHex":"1a1a2e", "opacity":100, "background":"fbbf24", "backgroundRadius":40 }
 
 COLOR GUIDANCE:
 - For dark or medium images: colorHex "ffffff" (white text)
@@ -504,28 +535,33 @@ Return this exact JSON shape:
   const validFonts: FontFamily[] = ['Arial', 'Impact', 'Georgia', 'Verdana', 'Courier_New'];
   spec.layers = spec.layers
     .filter(l => l && validSources.includes(l.textSource))
-    .map(l => ({
-      ...l,
-      fontFamily:       validFonts.includes(l.fontFamily as FontFamily) ? l.fontFamily : undefined,
-      size:             Math.max(16, Math.min(80, Math.round(l.size ?? 36))),
-      bold:             !!l.bold,
-      italic:           !!l.italic,
-      gravity:          l.gravity || 'south',
-      y:                Math.round(l.y ?? 0),
-      x:                Math.round(l.x ?? 0),
-      width:            Math.max(200, Math.min(960, Math.round(l.width ?? 900))),
-      colorHex:         (l.colorHex ?? 'ffffff').replace(/^#/, '').slice(0, 6) || 'ffffff',
-      opacity:          Math.max(50, Math.min(100, Math.round(l.opacity ?? 100))),
-      background:       l.background ? l.background.replace(/^#/, '').slice(0, 6) : undefined,
-      backgroundRadius: l.background && l.backgroundRadius != null
-        ? Math.max(0, Math.min(40, Math.round(l.backgroundRadius)))
-        : undefined,
-    }));
+    .map(l => {
+      const minSize = l.textSource === 'headline' ? 52
+                    : l.textSource === 'cta'      ? 30
+                    : l.textSource === 'body_excerpt' ? 24 : 18;
+      return {
+        ...l,
+        fontFamily:       validFonts.includes(l.fontFamily as FontFamily) ? l.fontFamily : undefined,
+        size:             Math.max(minSize, Math.min(80, Math.round(l.size ?? minSize))),
+        bold:             !!l.bold,
+        italic:           !!l.italic,
+        gravity:          l.gravity || 'south',
+        y:                Math.round(l.y ?? 0),
+        x:                Math.round(l.x ?? 0),
+        width:            Math.max(200, Math.min(960, Math.round(l.width ?? 900))),
+        colorHex:         (l.colorHex ?? 'ffffff').replace(/^#/, '').slice(0, 6) || 'ffffff',
+        opacity:          Math.max(50, Math.min(100, Math.round(l.opacity ?? 100))),
+        background:       l.background ? l.background.replace(/^#/, '').slice(0, 6) : undefined,
+        backgroundRadius: l.background && l.backgroundRadius != null
+          ? Math.max(0, Math.min(40, Math.round(l.backgroundRadius)))
+          : undefined,
+      };
+    });
 
   if (spec.layers.length === 0) {
     spec.layers = [
-      { textSource: 'headline', size: 52, bold: true,  gravity: 'south', y: 195, x: 0, width: 920, colorHex: 'ffffff', opacity: 100 },
-      { textSource: 'cta',      size: 30, bold: true,  gravity: 'south', y: 110, x: 0, width: 920, colorHex: 'ffffff', opacity: 80  },
+      { textSource: 'headline', size: 60, bold: true,  gravity: 'south', y: 305, x: 0, width: 900, colorHex: 'ffffff', opacity: 100 },
+      { textSource: 'cta',      size: 30, bold: true,  gravity: 'south', y: 155, x: 0, width: 400, colorHex: 'ffffff', opacity: 85  },
     ];
   }
 
@@ -538,7 +574,12 @@ function sanitizeForCloudinary(text: string): string {
   return text
     .replace(/\//g, ' ')
     .replace(/,/g, '%252C')
-    .replace(/\$/g, '%2524');
+    .replace(/\$/g, '%2524')
+    // encodeURIComponent leaves these unencoded; Cloudinary's text parser may choke on them
+    .replace(/'/g, '%27')
+    .replace(/!/g, '%21')
+    .replace(/\(/g, '%28')
+    .replace(/\)/g, '%29');
 }
 
 function truncateText(text: string, maxChars: number): string {
@@ -592,15 +633,15 @@ function buildTextLayer(layer: BuilderLayer, assets: CopyAssets): string | null 
   const y = layer.y;
   const x = layer.x;
 
-  // Background box: b_rgb must precede l_text in the same transform segment
-  let t = `co_rgb:${col}`;
+  // Cloudinary docs: l_text first, then co_rgb, b_rgb, r_ — reversing this order
+  // causes Cloudinary to misparse the segment and return a processing error.
+  let t = `l_text:${fontSpec}:${text},w_${w},c_fit,co_rgb:${col}`;
   if (layer.background) {
     const bg = layer.background.replace(/^#/, '').slice(0, 6);
     t += `,b_rgb:${bg}`;
-  }
-  t += `,l_text:${fontSpec}:${text},w_${w},c_fit`;
-  if (layer.background && layer.backgroundRadius != null) {
-    t += `,r_${Math.max(0, Math.min(40, Math.round(layer.backgroundRadius)))}`;
+    if (layer.backgroundRadius != null) {
+      t += `,r_${Math.max(0, Math.min(40, Math.round(layer.backgroundRadius)))}`;
+    }
   }
   t += `,g_${g}`;
   if (x !== 0) t += `,x_${x}`;
