@@ -1,5 +1,5 @@
 import dotenv from 'dotenv'
-dotenv.config({ path: '.env' })
+dotenv.config({ path: '.env.local' })
 import express from 'express'
 import cors from 'cors'
 import { parseNeed } from './lib/ai/parseNeed.js'
@@ -7,6 +7,7 @@ import { scoreAndMatch } from './lib/matching/score.js'
 import Anthropic from '@anthropic-ai/sdk'
 import twilio from 'twilio'
 import { createClient } from '@supabase/supabase-js'
+dotenv.config({ path: '.env' })
 
 function getSupabase() {
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.VITE_SUPABASE_ANON_KEY!
