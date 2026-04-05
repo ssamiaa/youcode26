@@ -45,7 +45,7 @@ app.post('/api/match', async (req, res) => {
   // Claude parses the full accumulated conversation so far
   const criteria = await parseNeed(accumulated)
 
-  // Check what info is missing and ask for it one at a time
+  // Only block on truly essential fields — language, availability, neighbourhood
   if (!criteria.languages.length) {
     return res.json({ reply: "What language should the volunteer speak?", session_id: id })
   }
@@ -55,11 +55,9 @@ app.post('/api/match', async (req, res) => {
   if (!criteria.neighbourhood) {
     return res.json({ reply: "What neighbourhood is this for?", session_id: id })
   }
-  if (!criteria.cause_areas.length) {
-    return res.json({ reply: "What kind of work is this for?", session_id: id })
-  }
+  // cause_areas is optional — don't block on it
 
-  // All fields filled — score volunteers from Supabase
+  // All essential fields filled — score volunteers from Supabase
   const topVolunteers = await scoreAndMatch(criteria)
 
   // Claude writes a reason for each match
@@ -97,7 +95,6 @@ Write one sentence (max 25 words) explaining why this is a good match. Be specif
     }]
   })
   const session_tag = tagResponse.content[0].type === 'text' ? tagResponse.content[0].text.trim() : ''
-<<<<<<< HEAD
 
   // Return reply + volunteers + session tag + session id
   return res.json({
@@ -105,13 +102,6 @@ Write one sentence (max 25 words) explaining why this is a good match. Be specif
     volunteers: withReasons,
     session_tag,
     session_id: id
-=======
-  
-  return res.json({
-    reply: `I found ${withReasons.length} great matches for you!`,
-    volunteers: withReasons,
-    session_tag
->>>>>>> b8cc748481a2553371801f50b9b62aec1a742649
   })
 })
 
