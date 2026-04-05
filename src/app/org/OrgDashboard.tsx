@@ -85,7 +85,7 @@ export default function OrgDashboard() {
         <ImportCSV />
       </header>
 
-      <nav aria-label="Dashboard sections" className="border-b border-[#1A3A52] px-4 flex gap-0 bg-[#002855]">
+      <nav aria-label="Dashboard sections" className="border-b border-[#1A3A52] px-4 flex justify-center gap-0 bg-[#002855]">
         {([
           { id: 'find',     label: 'Find volunteers' },
           { id: 'pipeline', label: 'Pipeline' },

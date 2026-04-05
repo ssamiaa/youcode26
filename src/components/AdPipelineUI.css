@@ -1,23 +1,23 @@
 /* ─── Design Tokens ─────────────────────────────────────────────────────────── */
 .ad-pipeline {
-  --bg: #0a0a0f;
-  --bg-card: #111118;
-  --bg-elevated: #17171f;
-  --border: #2a2a3a;
-  --border-focus: #6c63ff;
-  --text-primary: #f0f0f8;
-  --text-secondary: #8888aa;
-  --text-muted: #55556a;
-  --accent: #6c63ff;
-  --accent-2: #a855f7;
-  --accent-gradient: linear-gradient(135deg, #6c63ff, #a855f7);
+  --bg: #002855;
+  --bg-card: #1A3A52;
+  --bg-elevated: #0d2240;
+  --border: #4A7BA7;
+  --border-focus: #0070E0;
+  --text-primary: #ffffff;
+  --text-secondary: #A9CEE8;
+  --text-muted: #8B9DB5;
+  --accent: #0070E0;
+  --accent-2: #5DADE2;
+  --accent-gradient: linear-gradient(135deg, #0070E0, #5DADE2);
   --green: #22c55e;
   --red: #ef4444;
   --yellow: #f59e0b;
   --radius: 12px;
   --radius-sm: 8px;
-  --shadow: 0 4px 24px rgba(108, 99, 255, 0.15);
-  --font: 'Inter', system-ui, -apple-system, sans-serif;
+  --shadow: 0 4px 24px rgba(0, 112, 224, 0.15);
+  --font: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
 
 /* ─── Base ──────────────────────────────────────────────────────────────────── */
@@ -69,22 +69,19 @@
   font-weight: 700;
   letter-spacing: 0.15em;
   color: var(--accent);
-  background: rgba(108, 99, 255, 0.12);
-  border: 1px solid rgba(108, 99, 255, 0.3);
+  background: rgba(0, 112, 224, 0.12);
+  border: 1px solid rgba(0, 112, 224, 0.3);
   padding: 4px 12px;
   border-radius: 100px;
   margin-bottom: 20px;
 }
 
 .pipeline-header h1 {
-  font-size: clamp(26px, 5vw, 40px);
-  font-weight: 800;
-  letter-spacing: -0.02em;
+  font-size: clamp(22px, 4vw, 32px);
+  font-weight: 700;
+  letter-spacing: -0.01em;
   margin: 0 0 16px;
-  background: var(--accent-gradient);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  color: #ffffff;
 }
 
 .pipeline-header p {
@@ -404,8 +401,8 @@
 .pipeline-step.active .step-icon {
   border-color: var(--accent);
   color: var(--accent);
-  background: rgba(108, 99, 255, 0.1);
-  box-shadow: 0 0 0 5px rgba(108, 99, 255, 0.1);
+  background: rgba(0, 112, 224, 0.1);
+  box-shadow: 0 0 0 5px rgba(0, 112, 224, 0.1);
 }
 
 .pipeline-step.done .step-icon {
@@ -923,7 +920,7 @@
   font-size: 13px;
   color: var(--accent);
   font-family: 'Fira Code', 'Courier New', monospace;
-  background: rgba(108, 99, 255, 0.08);
+  background: rgba(0, 112, 224, 0.08);
   padding: 4px 8px;
   border-radius: 4px;
   display: inline-block;
@@ -1070,8 +1067,8 @@
   width: 32px;
   height: 32px;
   border-radius: 8px;
-  background: rgba(108, 99, 255, 0.1);
-  border: 1px solid rgba(108, 99, 255, 0.2);
+  background: rgba(0, 112, 224, 0.1);
+  border: 1px solid rgba(0, 112, 224, 0.2);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1222,9 +1219,9 @@
   gap: 8px;
   padding: 14px 28px;
   border-radius: var(--radius);
-  border: 1.5px solid rgba(6, 182, 212, 0.4);
-  background: rgba(6, 182, 212, 0.08);
-  color: #06b6d4;
+  border: 1.5px solid rgba(0, 112, 224, 0.4);
+  background: rgba(0, 112, 224, 0.08);
+  color: #5DADE2;
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
@@ -1232,8 +1229,8 @@
 }
 
 .btn-download:hover {
-  background: rgba(6, 182, 212, 0.16);
-  border-color: rgba(6, 182, 212, 0.65);
+  background: rgba(0, 112, 224, 0.16);
+  border-color: rgba(0, 112, 224, 0.65);
   transform: translateY(-1px);
 }
 
@@ -1302,7 +1299,7 @@
 .gallery-card:hover {
   border-color: var(--border-focus);
   transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(108, 99, 255, 0.12);
+  box-shadow: 0 8px 24px rgba(0, 112, 224, 0.12);
 }
 
 .gallery-card-thumb {
@@ -1424,8 +1421,8 @@
 }
 
 .gallery-card-action-btn:hover {
-  border-color: #06b6d4;
-  color: #06b6d4;
+  border-color: #5DADE2;
+  color: #5DADE2;
 }
 
 .gallery-card-action-btn--remove:hover {
@@ -1469,7 +1466,7 @@
 }
 
 .btn-edit-text:hover {
-  border-color: rgba(108, 99, 255, 0.5);
+  border-color: rgba(0, 112, 224, 0.5);
   color: var(--accent);
 }
 
@@ -1523,7 +1520,7 @@
 
 .edit-input:focus {
   outline: none;
-  border-color: rgba(108, 99, 255, 0.5);
+  border-color: rgba(0, 112, 224, 0.5);
 }
 
 .edit-textarea {
@@ -1543,7 +1540,7 @@
 
 .edit-textarea:focus {
   outline: none;
-  border-color: rgba(108, 99, 255, 0.5);
+  border-color: rgba(0, 112, 224, 0.5);
 }
 
 .edit-actions {
@@ -1557,9 +1554,9 @@
   gap: 7px;
   padding: 9px 20px;
   border-radius: var(--radius);
-  border: 1.5px solid rgba(16, 185, 129, 0.4);
-  background: rgba(16, 185, 129, 0.08);
-  color: #10b981;
+  border: 1.5px solid rgba(0, 112, 224, 0.4);
+  background: rgba(0, 112, 224, 0.08);
+  color: #5DADE2;
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
@@ -1572,19 +1569,19 @@
 }
 
 .btn-apply-edit:hover {
-  background: rgba(16, 185, 129, 0.16);
-  border-color: rgba(16, 185, 129, 0.65);
+  background: rgba(0, 112, 224, 0.16);
+  border-color: rgba(0, 112, 224, 0.65);
 }
 
 .btn-apply-edit--save {
-  border-color: rgba(108, 99, 255, 0.4);
-  background: rgba(108, 99, 255, 0.08);
+  border-color: rgba(0, 112, 224, 0.4);
+  background: rgba(0, 112, 224, 0.08);
   color: var(--accent);
 }
 
 .btn-apply-edit--save:hover {
-  background: rgba(108, 99, 255, 0.16);
-  border-color: rgba(108, 99, 255, 0.65);
+  background: rgba(0, 112, 224, 0.16);
+  border-color: rgba(0, 112, 224, 0.65);
 }
 
 .preview-edited-badge {
