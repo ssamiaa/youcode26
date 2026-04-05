@@ -396,9 +396,9 @@ bold / italic: combine freely. Impact is already visually heavy; avoid bold+Impa
 size: 16–80 px. Guidelines:
   eyebrow / label  → 16–22
   body excerpt     → 22–28
-  CTA              → 32–42
-  headline         → 52–80
-  hero/single-word → 80
+  CTA              → 26–34
+  headline         → 38–68
+  hero/single-word → up to 80
 
 background (optional hex): draws a solid colour box BEHIND this layer's text.
   Use for CTA badge/pills, eyebrow chips, stat callouts.
@@ -413,33 +413,33 @@ backgroundRadius (optional int 0–40): rounded corners of the background box.
 ─── LAYER POSITIONING EXAMPLES ────────────────────────────────────────────────
 
   band-south (2 layers, Impact headline + amber CTA badge):
-    { "textSource":"headline", "fontFamily":"Impact", "size":72, "bold":false, "gravity":"south", "y":225, "x":0, "width":920, "colorHex":"ffffff", "opacity":100 }
-    { "textSource":"cta", "size":34, "bold":true, "gravity":"south", "y":120, "x":0, "width":360, "colorHex":"1a1a2e", "opacity":100, "background":"f59e0b", "backgroundRadius":8 }
+    { "textSource":"headline", "fontFamily":"Impact", "size":60, "bold":false, "gravity":"south", "y":210, "x":0, "width":920, "colorHex":"ffffff", "opacity":100 }
+    { "textSource":"cta", "size":28, "bold":true, "gravity":"south", "y":118, "x":0, "width":360, "colorHex":"1a1a2e", "opacity":100, "background":"f59e0b", "backgroundRadius":8 }
 
   band-north (3 layers — eyebrow chip + Georgia headline at top, CTA badge at bottom):
     { "textSource":"custom", "customText":"VOLUNTEER OPPORTUNITY", "size":18, "bold":false, "gravity":"north", "y":44, "x":0, "width":880, "colorHex":"000000", "opacity":100, "background":"fbbf24", "backgroundRadius":4 }
-    { "textSource":"headline", "fontFamily":"Georgia", "size":58, "bold":true, "italic":true, "gravity":"north", "y":88, "x":0, "width":920, "colorHex":"ffffff", "opacity":100 }
-    { "textSource":"cta", "size":34, "bold":true, "gravity":"south", "y":120, "x":0, "width":920, "colorHex":"ffffff", "opacity":85 }
+    { "textSource":"headline", "fontFamily":"Georgia", "size":48, "bold":true, "italic":true, "gravity":"north", "y":82, "x":0, "width":920, "colorHex":"ffffff", "opacity":100 }
+    { "textSource":"cta", "size":28, "bold":true, "gravity":"south", "y":108, "x":0, "width":920, "colorHex":"ffffff", "opacity":85 }
 
   panel-left (3 layers inside the left column):
     { "textSource":"custom", "customText":"FOOD SECURITY", "size":18, "bold":false, "gravity":"west", "y":-240, "x":28, "width":400, "colorHex":"000000", "opacity":100, "background":"ffffff", "backgroundRadius":4 }
-    { "textSource":"headline", "fontFamily":"Verdana", "size":52, "bold":true, "gravity":"west", "y":-140, "x":28, "width":404, "colorHex":"ffffff", "opacity":100 }
-    { "textSource":"cta", "size":32, "bold":true, "gravity":"west", "y":110, "x":28, "width":400, "colorHex":"1a1a2e", "opacity":100, "background":"ffffff", "backgroundRadius":6 }
+    { "textSource":"headline", "fontFamily":"Verdana", "size":40, "bold":true, "gravity":"west", "y":-140, "x":28, "width":404, "colorHex":"ffffff", "opacity":100 }
+    { "textSource":"cta", "size":26, "bold":true, "gravity":"west", "y":100, "x":28, "width":400, "colorHex":"1a1a2e", "opacity":100, "background":"ffffff", "backgroundRadius":6 }
 
   panel-right (3 layers):
-    { "textSource":"headline", "fontFamily":"Georgia", "size":54, "bold":true, "gravity":"east", "y":-150, "x":28, "width":404, "colorHex":"ffffff", "opacity":100 }
-    { "textSource":"body_excerpt", "maxBodyChars":60, "fontFamily":"Georgia", "size":24, "bold":false, "italic":true, "gravity":"east", "y":-28, "x":28, "width":400, "colorHex":"ffffff", "opacity":80 }
-    { "textSource":"cta", "size":32, "bold":true, "gravity":"east", "y":110, "x":28, "width":320, "colorHex":"000000", "opacity":100, "background":"f59e0b", "backgroundRadius":8 }
+    { "textSource":"headline", "fontFamily":"Georgia", "size":42, "bold":true, "gravity":"east", "y":-150, "x":28, "width":404, "colorHex":"ffffff", "opacity":100 }
+    { "textSource":"body_excerpt", "maxBodyChars":60, "fontFamily":"Georgia", "size":22, "bold":false, "italic":true, "gravity":"east", "y":-28, "x":28, "width":400, "colorHex":"ffffff", "opacity":80 }
+    { "textSource":"cta", "size":26, "bold":true, "gravity":"east", "y":100, "x":28, "width":320, "colorHex":"000000", "opacity":100, "background":"f59e0b", "backgroundRadius":8 }
 
   full overlay:
     { "textSource":"custom", "customText":"MENTAL HEALTH NONPROFIT", "size":17, "bold":false, "fontFamily":"Courier_New", "gravity":"center", "y":-130, "x":0, "width":880, "colorHex":"ffffff", "opacity":65 }
-    { "textSource":"headline", "fontFamily":"Impact", "size":76, "bold":false, "gravity":"center", "y":-40, "x":0, "width":920, "colorHex":"ffffff", "opacity":100 }
-    { "textSource":"cta", "size":34, "bold":true, "gravity":"center", "y":68, "x":0, "width":320, "colorHex":"ffffff", "opacity":100, "background":"dc2626", "backgroundRadius":40 }
+    { "textSource":"headline", "fontFamily":"Impact", "size":64, "bold":false, "gravity":"center", "y":-40, "x":0, "width":920, "colorHex":"ffffff", "opacity":100 }
+    { "textSource":"cta", "size":28, "bold":true, "gravity":"center", "y":58, "x":0, "width":320, "colorHex":"ffffff", "opacity":100, "background":"dc2626", "backgroundRadius":40 }
 
   dual (eyebrow chip at top, headline + CTA badge at bottom):
     { "textSource":"custom", "customText":"JOIN US THIS WEEKEND", "size":20, "bold":false, "gravity":"north", "y":82, "x":0, "width":600, "colorHex":"000000", "opacity":100, "background":"ffffff", "backgroundRadius":4 }
-    { "textSource":"headline", "fontFamily":"Georgia", "size":62, "bold":true, "gravity":"south", "y":215, "x":0, "width":920, "colorHex":"ffffff", "opacity":100 }
-    { "textSource":"cta", "size":32, "bold":true, "gravity":"south", "y":125, "x":0, "width":300, "colorHex":"1a1a2e", "opacity":100, "background":"fbbf24", "backgroundRadius":40 }
+    { "textSource":"headline", "fontFamily":"Georgia", "size":50, "bold":true, "gravity":"south", "y":200, "x":0, "width":920, "colorHex":"ffffff", "opacity":100 }
+    { "textSource":"cta", "size":26, "bold":true, "gravity":"south", "y":112, "x":0, "width":300, "colorHex":"1a1a2e", "opacity":100, "background":"fbbf24", "backgroundRadius":40 }
 
 COLOR GUIDANCE:
 - For dark or medium images: colorHex "ffffff" (white text)
@@ -524,8 +524,8 @@ Return this exact JSON shape:
 
   if (spec.layers.length === 0) {
     spec.layers = [
-      { textSource: 'headline', size: 68, bold: true, gravity: 'south', y: 240, x: 0, width: 920, colorHex: 'ffffff', opacity: 100 },
-      { textSource: 'cta',      size: 36, bold: true, gravity: 'south', y: 130, x: 0, width: 920, colorHex: 'ffffff', opacity: 80  },
+      { textSource: 'headline', size: 52, bold: true,  gravity: 'south', y: 195, x: 0, width: 920, colorHex: 'ffffff', opacity: 100 },
+      { textSource: 'cta',      size: 30, bold: true,  gravity: 'south', y: 110, x: 0, width: 920, colorHex: 'ffffff', opacity: 80  },
     ];
   }
 
@@ -533,6 +533,13 @@ Return this exact JSON shape:
 }
 
 // ─── Phase 6: The Builder (Cloudinary) ───────────────────────────────────────
+
+function sanitizeForCloudinary(text: string): string {
+  return text
+    .replace(/\//g, ' ')
+    .replace(/,/g, '%252C')
+    .replace(/\$/g, '%2524');
+}
 
 function truncateText(text: string, maxChars: number): string {
   const t = text.replace(/\s+/g, ' ').trim();
@@ -552,98 +559,73 @@ function resolveLayerText(layer: BuilderLayer, assets: CopyAssets): string {
   }
 }
 
-// 1. IMPROVED SANITIZATION
-function sanitizeForCloudinary(text: string): string {
-  return text
-    .replace(/\//g, ' ')  // Slashes break URL paths
-    .replace(/\%/g, '%25') // Escape existing percent signs
-    .replace(/,/g, '%252C') // Double-encode commas for layer safety
-    .replace(/\…/g, '...')  // Replace unicode ellipsis with standard dots
-    .trim();
-}
-
-// 2. STABLE SCRIM LOGIC (Using the Space Primitive)
 function buildScrimLayers(spec: BuilderSpec): string[] {
   const c = spec.scrimColorHex;
   const o = spec.scrimOpacity;
-  
-  // The "Space Primitive" - a 10px font space scaled to the desired size.
-  // This is 1000x lighter on Cloudinary memory than a 1080pt font.
-  const box = (w: number, h: number, g: string, op: number = o) => 
-    `co_rgb:${c},b_rgb:${c},l_text:Arial_10:%20,w_${w},h_${h},o_${op},g_${g}`;
-
   switch (spec.scrimStyle) {
-    case 'band-south':  return [box(1080, 380, 'south')];
-    case 'band-north':  return [box(1080, 380, 'north')];
-    case 'panel-left':  return [box(460, 1080, 'west')];
-    case 'panel-right': return [box(460, 1080, 'east')];
-    case 'full':        return [box(1080, 1080, 'center')];
-    case 'dual':        return [box(1080, 220, 'north', Math.max(25, o-10)), box(1080, 380, 'south')];
-    default:            return [box(1080, 380, 'south')];
+    case 'band-south':  return [`co_rgb:${c},l_text:Arial_10:%20,w_1080,h_340,o_${o},g_south`];
+    case 'band-north':  return [`co_rgb:${c},l_text:Arial_10:%20,w_1080,h_340,o_${o},g_north`];
+    case 'panel-left':  return [`co_rgb:${c},l_text:Arial_10:%20,w_460,h_1080,o_${o},g_west`];
+    case 'panel-right': return [`co_rgb:${c},l_text:Arial_10:%20,w_460,h_1080,o_${o},g_east`];
+    case 'full':        return [`co_rgb:${c},l_text:Arial_10:%20,w_1080,h_1080,o_${o},g_center`];
+    case 'dual': return [
+      `co_rgb:${c},l_text:Arial_10:%20,w_1080,h_200,o_${Math.max(25, o - 8)},g_north`,
+      `co_rgb:${c},l_text:Arial_10:%20,w_1080,h_340,o_${o},g_south`,
+    ];
+    default: return [`co_rgb:${c},l_text:Arial_10:%20,w_1080,h_340,o_${o},g_south`];
   }
 }
 
-// 3. ROBUST TEXT LAYER CONSTRUCTION
 function buildTextLayer(layer: BuilderLayer, assets: CopyAssets): string | null {
   const rawText = resolveLayerText(layer, assets);
   if (!rawText) return null;
 
-  // IMPORTANT: We do NOT use encodeURIComponent here because sanitizeForCloudinary 
-  // already handles the specific escapes Cloudinary needs for overlays.
-  const text = sanitizeForCloudinary(rawText);
-  
-  const font = layer.fontFamily === 'Courier_New' ? 'Courier' : (layer.fontFamily ?? 'Arial');
+  const text = encodeURIComponent(sanitizeForCloudinary(rawText));
+  const font = layer.fontFamily ?? 'Arial';
   const size = layer.size;
   const styles = [layer.bold ? 'bold' : '', layer.italic ? 'italic' : ''].filter(Boolean).join('_');
   const fontSpec = styles ? `${font}_${size}_${styles}` : `${font}_${size}`;
-  
-  const parts = [
-    `co_rgb:${layer.colorHex}`,
-    layer.background ? `b_rgb:${layer.background.replace('#','')}` : '',
-    `l_text:${fontSpec}:${text}`,
-    `w_${layer.width}`,
-    layer.backgroundRadius ? `r_${layer.backgroundRadius}` : '',
-    `g_${layer.gravity}`,
-    `x_${layer.x}`,
-    `y_${layer.y}`,
-    layer.opacity < 100 ? `o_${layer.opacity}` : ''
-  ].filter(Boolean);
+  const col = layer.colorHex;
+  const o = layer.opacity;
+  const w = layer.width;
+  const g = layer.gravity;
+  const y = layer.y;
+  const x = layer.x;
 
-  return parts.join(',');
+  // Background box: b_rgb must precede l_text in the same transform segment
+  let t = `co_rgb:${col}`;
+  if (layer.background) {
+    const bg = layer.background.replace(/^#/, '').slice(0, 6);
+    t += `,b_rgb:${bg}`;
+  }
+  t += `,l_text:${fontSpec}:${text},w_${w},c_fit`;
+  if (layer.background && layer.backgroundRadius != null) {
+    t += `,r_${Math.max(0, Math.min(40, Math.round(layer.backgroundRadius)))}`;
+  }
+  t += `,g_${g}`;
+  if (x !== 0) t += `,x_${x}`;
+  if (y !== 0) t += `,y_${y}`;
+  if (o < 100) t += `,o_${o}`;
+  return t;
 }
 
-// 4. CLEANER FINAL ASSEMBLY
-export function buildCloudinaryUrl(copyAssets: CopyAssets, input: AdInput, imageUrl: string): string {
-  const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
-  const spec = copyAssets.builderSpec;
-
-  const org = sanitizeForCloudinary(input.orgName);
-  const contact = sanitizeForCloudinary(input.contact);
-  const img = encodeURIComponent(imageUrl);
-
-  const scrims = buildScrimLayers(spec);
-  const textLayers = spec.layers
-    .map(l => buildTextLayer(l, copyAssets))
-    .filter(Boolean);
-
-  // Use a standard box for the footer brand bar
-  const footerBar = `co_rgb:070708,b_rgb:070708,l_text:Arial_10:%20,w_1080,h_100,o_100,g_south`;
-
-  const urlParts = [
-    `https://res.cloudinary.com/${cloudName}/image/fetch`,
-    `w_1080,h_1080,c_fill,f_auto,q_auto`,
-    ...scrims,
-    ...textLayers,
-    footerBar,
-    `co_rgb:ffffff,l_text:Arial_24_bold:${org},g_south_west,x_40,y_35`,
-    `co_rgb:ffffffcc,l_text:Arial_20:${contact},g_south_east,x_40,y_35`,
-    img
-  ];
-
-  return urlParts.join('/');
+/**
+ * Returns a single Cloudinary transformation segment that renders a solid-colour
+ * rectangle at the given position. Uses Cloudinary's b_rgb background fill on a
+ * text layer (space character) — a single segment, so there is no multi-step layer
+ * context that could mis-sequence with the following text layers.
+ */
+function buildPixelRect(
+  colorHex: string,
+  width: number,
+  height: number,
+  gravity: string,
+  opacity = 100
+): string[] {
+  // b_rgb fills the bounding box background; co_rgb colours the (invisible) space glyph.
+  // Both set to the same hex so the rectangle is a solid uniform colour.
+  return [`b_rgb:${colorHex},co_rgb:${colorHex},l_text:Arial_10:%20,w_${width},h_${height},o_${opacity},g_${gravity}`];
 }
-
-
 
 /**
  * Converts a Copywriter-supplied BuilderSpec into a Cloudinary fetch-URL transformation chain.
@@ -655,7 +637,37 @@ export function buildCloudinaryUrl(copyAssets: CopyAssets, input: AdInput, image
  *   4. Brand footer: opaque dark south bar + org name + contact (not copywriter-controlled)
  *   5. Source image URL
  */
+export function buildCloudinaryUrl(
+  copyAssets: CopyAssets,
+  input: AdInput,
+  imageUrl: string
+): string {
+  const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
+  const spec = copyAssets.builderSpec;
 
+  const o = encodeURIComponent(sanitizeForCloudinary(input.orgName));
+  const c = encodeURIComponent(sanitizeForCloudinary(input.contact));
+  const img = encodeURIComponent(imageUrl);
+
+  const textLayers = spec.layers
+    .map(l => buildTextLayer(l, copyAssets))
+    .filter((l): l is string => l !== null);
+
+  const layers: string[] = [
+    `https://res.cloudinary.com/${cloudName}/image/fetch`,
+    `w_1080,h_1080,c_fill,f_auto,q_auto`,
+    ...buildScrimLayers(spec),
+    ...textLayers,
+    // Brand footer — 1×1 pixel scaled to full-width dark bar (not copywriter-controlled)
+    ...buildPixelRect('070708', 1080, 100, 'south'),
+    `co_rgb:ffffff,l_text:Arial_2:%20,w_980,h_1,o_45,g_south,y_100`,
+    `co_rgb:ffffff,l_text:Arial_28_bold:${o},g_south_west,x_40,y_36`,
+    `co_rgb:ffffffcc,l_text:Arial_24:${c},g_south_east,x_40,y_38`,
+    img,
+  ];
+
+  return layers.join('/');
+}
 
 // ─── Hook ─────────────────────────────────────────────────────────────────────
 
