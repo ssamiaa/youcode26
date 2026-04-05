@@ -22,18 +22,22 @@ export async function parseNeed(rawDescription: string): Promise<ParsedNeed> {
     // claude prompt
     system: `You are a volunteer matching assistant.
 Extract structured criteria from the coordinator's request.
-Return ONLY valid JSON, no other text:
+Return ONLY valid JSON, no other text.
+IMPORTANT: Only include values that are EXPLICITLY mentioned. If something is not clearly stated, leave it as empty array or empty string. Do not guess or infer.
 {
   "languages": [],
   "availability": [],
   "neighbourhood": "",
   "cause_areas": [],
   "skills": [],
-  "requires_background_check": true/false
+  "requires_background_check": false
 }
 Map availability to one of: "weekday mornings", "weekday afternoons",
 "weekday evenings", "weekends only", "weekend mornings",
-"weekend afternoons", "flexible / as needed", "weekdays only", "evenings only".`,
+"weekend afternoons", "flexible / as needed", "weekdays only", "evenings only".
+If availability is not clearly stated, return empty array.
+If language is not clearly stated, return empty array.
+If neighbourhood is not clearly stated, return empty string.`,
 
     messages: [{ role: 'user', content: rawDescription }],
   })
