@@ -85,17 +85,10 @@ Write one sentence (max 25 words) explaining why this is a good match. Be specif
   })
   const session_tag = tagResponse.content[0].type === 'text' ? tagResponse.content[0].text.trim() : ''
   
-  // Return reply + volunteers + session tag
   return res.json({
     reply: `I found ${withReasons.length} great matches for you!`,
     volunteers: withReasons,
     session_tag
-  })
-
-  // Return reply + volunteers so the UI can show match cards
-  return res.json({
-    reply: `I found ${withReasons.length} great matches for you!`,
-    volunteers: withReasons
   })
 })
 
