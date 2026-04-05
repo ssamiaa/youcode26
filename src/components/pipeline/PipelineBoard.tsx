@@ -54,6 +54,11 @@ export default function PipelineBoard({ orgId, refreshTrigger, onVolunteerConnec
 
   useEffect(() => { fetchPipeline() }, [fetchPipeline, refreshTrigger])
 
+  useEffect(() => {
+    const interval = setInterval(fetchPipeline, 5000)
+    return () => clearInterval(interval)
+  }, [fetchPipeline])
+
   // All unique tags across entries
   const allTags = Array.from(
     new Set(entries.map(e => e.session_tag).filter((t): t is string => !!t))
