@@ -2,6 +2,10 @@
 
 Relinkd is an end-to-end volunteer recruitment platform for BC nonprofits. A coordinator describes what they need in plain language, Relinkd finds the best matches from a real volunteer database, sends SMS outreach automatically, tracks responses, and uses engagement data to generate targeted social media recruitment posts — all in one platform.
 
+## Pitch Deck
+
+[View our presentation slides](https://relinkd.my.canva.site)
+
 ## Features
 
 - **AI-guided matching** — describe your need in plain language, Relinkd asks follow up questions and returns the top 5 volunteers with scores and match reasons
